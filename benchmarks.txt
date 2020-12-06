@@ -1,0 +1,4 @@
+tour29: simple greedy heuristic 30350.13, optimal value approximately 27200
+tour100: (includes disconnected cities), simple greedy heuristic 8636.5, optimal value estimated around 7350
+tour194: simple greedy heuristic 11385.01, optimal value approximately 9000
+tour929: simple greedy heuristic 113683.58, optimal value approximately 95300
