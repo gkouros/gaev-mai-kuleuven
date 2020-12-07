@@ -31,3 +31,7 @@ class Individual:
             dist += self.distance_matrix[from_city, to_city]
 
         return dist
+
+    def set_route(self, route):
+        self.route = route
+        self.fitness = self.calc_fitness()

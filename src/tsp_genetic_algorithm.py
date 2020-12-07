@@ -21,6 +21,7 @@ class TSPGeneticAlgorithm:
         self.lambda_ = lambda_
         self.mu = mu
         self.k = k
+        self.distance_matrix = distance_matrix
         self.recombination_probability = recombination_probability
         self.mutation_probability = mutation_probability
         self.iteration = 0
@@ -47,7 +48,8 @@ class TSPGeneticAlgorithm:
         self.population = [Individual(distance_matrix)
                            for _ in range(self.lambda_)]
 
-        # TODO local/heuristic search
+        self.sorted_city_map = self.calc_sorted_city_map()
+        self.find_heuristic_solutions(10)
 
     def perform_local_search(self, samples: int, steps: int) -> None:
         """ Performs local search in the population
@@ -58,17 +60,38 @@ class TSPGeneticAlgorithm:
         """
         pass
 
+    def find_heuristic_solutions(self, samples: int) -> None:
+        indices = np.random.choice(len(self.population), samples)
+
+        for idx in indices:
+            self.population[idx] = \
+                    self.find_heuristic_solution(self.population[idx])
+
+    def find_heuristic_solution(self, individual: Individual) -> Individual:
+        idx = individual.route[0]
+        individual.set_route(np.append(idx, self.sorted_city_map[idx]))
+        return individual
+
+    def calc_sorted_city_map(self) -> dict:
+        sorted_city_map = {}
+
+        for city in range(self.distance_matrix.shape[0]):
+            sorted_city_map[city] = np.argsort(
+                self.distance_matrix[city, :])[1:]
+
+        return sorted_city_map
+
     @property
     def state(self) -> str:
         """ Returns the state of the optimization """
         return f'#{self.iteration} ' +\
-                f'Best Objective: {self.best_objective} - ' + \
-                f'Mean Objective: {self.mean_objective}'
+               f'Best Objective: {self.best_objective} - ' + \
+               f'Mean Objective: {self.mean_objective}'
 
     def converged(self) -> None:
         """ Returns True if the optimization has converged """
-        return self.mean_objective != None and \
-                abs(self.best_objective - self.mean_objective) < 1e-8
+        return self.mean_objective is not None and \
+            abs(self.best_objective - self.mean_objective) < 1e-8
 
     def calc_mean_objective(self) -> float:
         """ Returns the mean fitness of the population """
