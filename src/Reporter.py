@@ -9,7 +9,7 @@ class Reporter:
 		self.numIterations = 0
 		self.filename = filename + ".csv"
 		self.delimiter = ','
-		self.startTime = time.clock()
+		self.startTime = time.time()
 		self.writingTime = 0
 		outFile = open(self.filename, "w")
 		outFile.write("# Student number: " + filename + "\n")
@@ -21,8 +21,8 @@ class Reporter:
 	#
 	# Returns the time that is left in seconds as a floating-point number.
 	def report(self, meanObjective, bestObjective, bestSolution):
-		if (time.clock() - self.startTime < self.allowedTime + self.writingTime):
-			start = time.clock()
+		if (time.time() - self.startTime < self.allowedTime + self.writingTime):
+			start = time.time()
 			
 			outFile = open(self.filename, "a")
 			outFile.write(str(self.numIterations) + self.delimiter)
@@ -35,5 +35,5 @@ class Reporter:
 			outFile.close()
 
 			self.numIterations += 1
-			self.writingTime += time.clock() - start
-		return (self.allowedTime + self.writingTime) - (time.clock() - self.startTime)
+			self.writingTime += time.time() - start
+		return (self.allowedTime + self.writingTime) - (time.time() - self.startTime)
