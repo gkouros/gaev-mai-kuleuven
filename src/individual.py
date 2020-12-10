@@ -33,5 +33,8 @@ class Individual:
         return dist
 
     def set_route(self, route):
+        if len(route) != len(set(route)):
+            raise ValueError('Invalid udpate of route of individual')
+
         self.route = route
         self.fitness = self.calc_fitness()

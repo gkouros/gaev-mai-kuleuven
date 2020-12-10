@@ -25,7 +25,7 @@ class TSPDemo:
         # Your code here.
 
         # Initialize a genetic algorithm instance using the given TSP problem
-        ga = TSPGeneticAlgorithm(distance_matrix, lambda_=1000, mu=200, k=4,
+        ga = TSPGeneticAlgorithm(distance_matrix, lambda_=100, mu=20, k=4,
                                  recombination_probability=0.9,
                                  mutation_probability=0.1)
 

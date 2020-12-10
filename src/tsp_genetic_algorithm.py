@@ -22,6 +22,7 @@ class TSPGeneticAlgorithm:
         self.mu = mu
         self.k = k
         self.distance_matrix = distance_matrix
+        self.num_cities = len(distance_matrix)
         self.recombination_probability = recombination_probability
         self.mutation_probability = mutation_probability
         self.iteration = 0
@@ -45,11 +46,15 @@ class TSPGeneticAlgorithm:
         Args:
             distance_matrix (np.array): The distances between the cities
         """
+        num_randoms = max(0, self.lambda_ - self.num_cities)
         self.population = [Individual(distance_matrix)
-                           for _ in range(self.lambda_)]
+                           for _ in range(num_randoms)]
 
+        # compute heuristic solutions
         self.sorted_city_map = self.calc_sorted_city_map()
-        self.find_heuristic_solutions(10)
+        heuristic_solutions = self.find_heuristic_solutions()
+        self.population += heuristic_solutions
+        print(len(self.population))
 
     def perform_local_search(self, samples: int, steps: int) -> None:
         """ Performs local search in the population
@@ -60,16 +65,34 @@ class TSPGeneticAlgorithm:
         """
         pass
 
-    def find_heuristic_solutions(self, samples: int) -> None:
-        indices = np.random.choice(len(self.population), samples)
+    def find_heuristic_solutions(self) -> list:
+        heuristic_solutions = []
+        num_heuristics = max(self.lambda_,
+                             self.lambda_ - len(self.distance_matrix))
 
-        for idx in indices:
-            self.population[idx] = \
-                    self.find_heuristic_solution(self.population[idx])
+        if self.lambda_ < len(self.distance_matrix):
+            start_cities = np.random.choice(self.num_cities, num_heuristics)
+        else:
+            start_cities = list(range(self.num_cities))
 
-    def find_heuristic_solution(self, individual: Individual) -> Individual:
-        idx = individual.route[0]
-        individual.set_route(np.append(idx, self.sorted_city_map[idx]))
+        for city in start_cities:
+            heuristic_solutions += [self.find_heuristic_solution(city)]
+
+        return heuristic_solutions
+
+    def find_heuristic_solution(self, city: int) -> Individual:
+        new_route = [city]
+
+        while len(new_route) != len(self.distance_matrix):
+            nearest_neighbours = self.sorted_city_map[new_route[-1]]
+            for next_nn in nearest_neighbours:
+                if next_nn not in new_route:
+                    new_route.append(next_nn)
+                    break
+
+        individual = Individual(self.distance_matrix)
+        individual.set_route(new_route)
+
         return individual
 
     def calc_sorted_city_map(self) -> dict:
@@ -116,7 +139,7 @@ class TSPGeneticAlgorithm:
         """ Performs an iteration of the genetic algorithm """
         self.iteration += 1
 
-        prob_r = np.random.rand()  # probability of recombination
+        prob_c = np.random.rand()  # probability of recombination
         prob_m = np.random.rand()  # probability of mutation
 
         all_offspring = []
@@ -126,7 +149,7 @@ class TSPGeneticAlgorithm:
                        for _ in range(2)]
 
             # recombination
-            if prob_r < self.recombination_probability:
+            if prob_c < self.recombination_probability:
                 offspring = self.recombine(*parents)
             else:
                 offspring = parents
