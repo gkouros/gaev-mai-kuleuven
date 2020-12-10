@@ -46,37 +46,21 @@ class TSPGeneticAlgorithm:
         Args:
             distance_matrix (np.array): The distances between the cities
         """
-        num_randoms = max(0, self.lambda_ - self.num_cities)
-        self.population = [Individual(distance_matrix)
-                           for _ in range(num_randoms)]
+        num_randoms = round(0.9 * self.lambda_)
+        self.population = [
+            Individual(distance_matrix) for _ in range(num_randoms)]
 
         # compute heuristic solutions
+        num_heuristics = self.lambda_ - num_randoms
         self.sorted_city_map = self.calc_sorted_city_map()
-        heuristic_solutions = self.find_heuristic_solutions()
+        heuristic_solutions = self.find_heuristic_solutions(num_heuristics)
         self.population += heuristic_solutions
-        print(len(self.population))
 
-    def perform_local_search(self, samples: int, steps: int) -> None:
-        """ Performs local search in the population
-
-        Args:
-            samples (int): The number of individuals to optimize
-            steps (int): The optimization steps
-        """
-        pass
-
-    def find_heuristic_solutions(self) -> list:
+    def find_heuristic_solutions(self, num_heuristics: int) -> list:
         heuristic_solutions = []
-        num_heuristics = max(self.lambda_,
-                             self.lambda_ - len(self.distance_matrix))
-
-        if self.lambda_ < len(self.distance_matrix):
-            start_cities = np.random.choice(self.num_cities, num_heuristics)
-        else:
-            start_cities = list(range(self.num_cities))
-
-        for city in start_cities:
-            heuristic_solutions += [self.find_heuristic_solution(city)]
+        start_cities = np.random.choice(self.num_cities, num_heuristics)
+        heuristic_solutions = [
+            self.find_heuristic_solution(city) for city in start_cities]
 
         return heuristic_solutions
 
