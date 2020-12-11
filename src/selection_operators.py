@@ -1,5 +1,6 @@
 import numpy as np
 from individual import Individual
+from copy import deepcopy
 
 
 def k_tournament_selection(population: list, k: int = 3):
@@ -27,4 +28,4 @@ def k_tournament_selection(population: list, k: int = 3):
     # k selected individuals
     min_idx = np.argmin(fitnesses)
 
-    return selected[min_idx]
+    return deepcopy(selected[min_idx])
