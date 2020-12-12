@@ -1,11 +1,17 @@
 import numpy as np
 import random
+from copy import deepcopy
 
 from individual import Individual
 from selection_operators import k_tournament_selection
 from recombination_operators import order_crossover
 from mutation_operators import swap_mutation, inversion_mutation
-from elimination_operators import lambda_plus_mu_elimination
+from elimination_operators import lambda_plus_mu_elimination, replace_worst, \
+        fitness_sharing_elimination
+from local_search_operators import two_opt, three_opt
+
+from fitness_utils import fitness_std, unique_fitnesses_normed
+from self_adaptivity_utils import self_adapt_param
 
 
 class TSPGeneticAlgorithm:
@@ -25,18 +31,38 @@ class TSPGeneticAlgorithm:
         self.num_cities = len(distance_matrix)
         self.recombination_probability = recombination_probability
         self.mutation_probability = mutation_probability
+        self.mutation_strength = 1
         self.iteration = 0
+
+        # flags
+        self.mutation_adaptivity = False
+        self.fitness_sharing = True
+
+        # define operators
+        self.selection = k_tournament_selection
+        self.recombination = order_crossover
+        self.mutation = inversion_mutation
+        self.local_search = two_opt
+        if self.fitness_sharing:
+            self.elimination = fitness_sharing_elimination
+        else:
+            self.elimination = replace_worst
+
+        # initialize metrics
         self.mean_objective = None
+        self.diversity = None
+
+        # metrics history
+        self.best_history = []
+        self.mean_history = []
+        self.diversity_history = []
 
         # initialize population
         self.population = None
         self.generate_population(distance_matrix)
 
-        # define operators
-        self.select = k_tournament_selection
-        self.recombine = order_crossover
-        self.mutate = inversion_mutation
-        self.eliminate = lambda_plus_mu_elimination
+        print('Population initialized!')
+        print(self.state)
 
     def generate_population(self, distance_matrix) -> None:
         """ Generates the initial population
@@ -55,6 +81,13 @@ class TSPGeneticAlgorithm:
         self.sorted_city_map = self.calc_sorted_city_map()
         heuristic_solutions = self.find_heuristic_solutions(num_heuristics)
         self.population += heuristic_solutions
+
+        # calculate mean fitness of initial population
+        self.mean_objective = self.calc_mean_objective()
+        self.diversity = unique_fitnesses_normed(self.population)
+
+        # sort population
+        self.population = sorted(self.population, key=lambda k: k.fitness)
 
     def find_heuristic_solutions(self, num_heuristics: int) -> list:
         heuristic_solutions = []
@@ -91,14 +124,28 @@ class TSPGeneticAlgorithm:
     @property
     def state(self) -> str:
         """ Returns the state of the optimization """
-        return f'#{self.iteration} ' +\
-               f'Best Objective: {self.best_objective} - ' + \
-               f'Mean Objective: {self.mean_objective}'
+        return \
+                f'#{self.iteration} ' +\
+                f'Best Objective: {self.best_objective} - ' + \
+                f'Mean Objective: {self.mean_objective} - ' + \
+                f'Diversity: {self.diversity}'
 
-    def converged(self) -> None:
+    def converged(self, improvement_criterion=False) -> None:
         """ Returns True if the optimization has converged """
-        return self.mean_objective is not None and \
-            abs(self.best_objective - self.mean_objective) < 1e-8
+        converged = False
+        if abs(self.best_objective - self.mean_objective) < 1e-8:
+            converged = True
+        elif improvement_criterion:
+            if self.iteration > 20:
+                num_iterations = int(self.iteration * 0.3)
+                if np.std(self.best_history[-num_iterations:]) < 1e-5:
+                    print('Best has converged')
+                    converged = True
+
+        return converged
+
+
+
 
     def calc_mean_objective(self) -> float:
         """ Returns the mean fitness of the population """
@@ -129,24 +176,54 @@ class TSPGeneticAlgorithm:
         all_offspring = []
         for _ in range(self.mu//2):
             # selection
-            parents = [self.select(self.population, k=self.k)
+            parents = [self.selection(self.population, k=self.k)
                        for _ in range(2)]
 
             # recombination
             if prob_c < self.recombination_probability:
-                offspring = self.recombine(*parents)
+                offspring = self.recombination(*parents)
             else:
                 offspring = parents
 
             # mutation
             if prob_m < self.mutation_probability:
-                offspring = [self.mutate(o) for o in offspring]
+                offspring = [self.mutation(o, self.mutation_strength)
+                             for o in offspring]
 
             all_offspring += offspring
 
+        # perform local search in 10 offspring randomly
+        num_local_searches = min(10, self.mu)
+        indices = np.random.choice(len(all_offspring), num_local_searches)
+        for idx in indices:
+            new_route = self.local_search(all_offspring[idx].route,
+                                            self.distance_matrix)
+            all_offspring[idx].set_route(new_route)
+
         # elimination
-        self.population = self.eliminate(all_offspring, self.population,
-                                         self.lambda_)
+        self.population = self.elimination(all_offspring, self.population,
+                                           self.lambda_)
 
         # update mean objective
         self.mean_objective = self.calc_mean_objective()
+
+        # calculate diversity
+        self.diversity = unique_fitnesses_normed(self.population)
+
+        # update metrics
+        self.best_history.append(self.best_objective)
+        self.mean_history.append(self.mean_objective)
+        self.diversity_history.append(self.diversity)
+
+        if self.mutation_adaptivity:
+            # self adapt mutation rate
+            self.mutation_probability = self_adapt_param(
+                self.mutation_probability,
+                p_min = 0.1, p_max =0.5,
+                d=self.diversity, d_target=0.5, xi=0.1)
+
+            # self adapt mutation strength
+            mutation_strength = self_adapt_param(
+                p=self.mutation_strength, p_min=1, p_max=5,
+                d=self.diversity, d_target=0.5, xi=1)
+            self.mutation_strength = round(mutation_strength)
