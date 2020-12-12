@@ -1,5 +1,6 @@
 import numpy as np
 from individual import Individual
+from copy import deepcopy
 
 
 def order_crossover(parent1, parent2):
@@ -14,15 +15,18 @@ def order_crossover(parent1, parent2):
         Individual: Second offspring produced by operator
     """
     size = parent1.size
+    parents = (parent1, parent2)
+
+    # randomly pick points for recombination
     start, end = sorted(np.random.choice(size, 2))
 
-    child1 = [None] * size
-    child2 = [None] * size
+    # initialize children
+    children = [[None] * size for _ in range(2)]
+    children[0][start:end] = parents[0].route[start:end]
+    children[1][start:end] = parents[1].route[start:end]
 
-    child1[start:end] = parent1.route[start:end]
-    child2[start:end] = parent2.route[start:end]
-
-    for child, parent in zip([child1, child2], [parent2, parent1]):
+    # fill rest of the route of the children
+    for child, parent in zip(children, parents[::-1]):
         idx1 = end % size
         idx2 = end % size
 
@@ -34,13 +38,13 @@ def order_crossover(parent1, parent2):
             idx2 = (idx2 + 1) % size
 
     try:
-        individual1 = Individual(parent1.distance_matrix, child1)
-        individual2 = Individual(parent2.distance_matrix, child2)
+        children = [Individual(parent.distance_matrix, child)
+                    for child, parent in zip(children, parents)]
     except ValueError as err:
         print(f'Recombination failed [{err}]. Returning parents instead.')
-        return parent1, parent2
+        children = [deepcopy(parent) for parent in parents]
 
-    return individual1, individual2
+    return children
 
 
 #  """ old implementation """
