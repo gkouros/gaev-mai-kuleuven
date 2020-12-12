@@ -59,11 +59,17 @@ class TSPDemo:
         # Your code here.
 
         # print final state of optimization
-        print('Converged!')
+        if time_left < 0:
+            print('Timed out')
+        else:
+            print('Converged!')
 
         return 0
 
 
 if __name__ == '__main__':
     demo = TSPDemo()
-    demo.optimize('datasets/tour29.csv')
+    #  demo.optimize('datasets/tour29.csv')
+    #  demo.optimize('datasets/tour100.csv')
+    demo.optimize('datasets/tour194.csv')
+    #  demo.optimize('datasets/tour929.csv')
