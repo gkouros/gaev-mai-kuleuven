@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def self_adapt_param(p: float,
+def adapt_param(p: float,
                      p_min: float,
                      p_max: float,
                      d: float,

@@ -4,12 +4,14 @@ import numpy as np
 class Individual:
     """ A candidate solution class for the TSP problem """
 
-    def __init__(self, distance_matrix, route=None):
+    def __init__(self, distance_matrix, route=None, sigma=10, gamma=2):
         self.size = len(distance_matrix)
         self.distance_matrix = distance_matrix
         self.route = None
         self.fitness = None
         self.edges = None
+        self.sigma = sigma
+        self.gamma = gamma
         if route is None:
             self.set_route(np.random.permutation(self.size))
         else:

@@ -2,7 +2,7 @@
 
 import numpy as np
 import Reporter
-from tsp_genetic_algorithm import TSPGeneticAlgorithm
+from tsp_evolutionary_algorithm import TSPEvolutionaryAlgorithm
 
 
 class TSPDemo:
@@ -25,11 +25,13 @@ class TSPDemo:
         # Your code here.
 
         # Initialize a genetic algorithm instance using the given TSP problem
-        ga = TSPGeneticAlgorithm(distance_matrix, lambda_=100, mu=20, k=4,
-                                 recombination_probability=0.9,
-                                 mutation_probability=0.1)
+        ga = TSPEvolutionaryAlgorithm(distance_matrix, lambda_=100, mu=20, k=4,
+                                      recombination_probability=0.9,
+                                      mutation_probability=0.1,
+                                      local_search_probability=0.3)
+        print(ga.state)
 
-        while not ga.converged():
+        while not ga.converged(improvement_criterion=False):
 
             # Your code here.
 
@@ -71,5 +73,5 @@ if __name__ == '__main__':
     demo = TSPDemo()
     #  demo.optimize('datasets/tour29.csv')
     #  demo.optimize('datasets/tour100.csv')
-    demo.optimize('datasets/tour194.csv')
-    #  demo.optimize('datasets/tour929.csv')
+    #  demo.optimize('datasets/tour194.csv')
+    demo.optimize('datasets/tour929.csv')

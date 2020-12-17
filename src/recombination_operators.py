@@ -37,8 +37,10 @@ def order_crossover(parent1, parent2):
 
             idx2 = (idx2 + 1) % size
 
+    sigma = (parent1.sigma + parent2.sigma) / 2
+
     try:
-        children = [Individual(parent.distance_matrix, child)
+        children = [Individual(parent.distance_matrix, child, sigma)
                     for child, parent in zip(children, parents)]
     except ValueError as err:
         print(f'Recombination failed [{err}]. Returning parents instead.')
