@@ -31,7 +31,9 @@ class TSPDemo:
                                       local_search_probability=0.3)
         print(ga.state)
 
-        while not ga.converged(improvement_criterion=False):
+        while not ga.converged(
+            improvement_criterion=True,
+            improvement_threshold=100):
 
             # Your code here.
 

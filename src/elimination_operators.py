@@ -40,10 +40,10 @@ def lambda_plus_mu_elimination(
     # combine population and offspring
     combined = population + offspring
 
-    # pick top lambda candidates
+    # sort new population
     combined = sorted(combined, key=lambda k: k.fitness, reverse=False)
 
-    # sort new population
+    # pick top lambda candidates
     combined = combined[:lambda_]
 
     # update fitness based on fitness sharing scheme
@@ -52,7 +52,6 @@ def lambda_plus_mu_elimination(
             combined[idx].calc_shared_fitness(
                 combined[:idx] + combined[idx+1:], alpha=alpha, sigma=sigma)
 
-    # prune and return new population
     return combined
 
 

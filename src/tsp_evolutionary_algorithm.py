@@ -72,7 +72,7 @@ class TSPEvolutionaryAlgorithm:
     def mutation(self, individual):
         prob = random.random()
 
-        if prob < 0.5:
+        if prob < 1:
             return inversion_mutation(individual)
         else:
             return swap_mutation(individual)
@@ -90,8 +90,15 @@ class TSPEvolutionaryAlgorithm:
         if heuristic_search:
             num_heuristics = int(self.lambda_ * 0.1)
             self.sorted_city_map = self.calc_sorted_city_map()
-            heuristic_solutions = self.find_heuristic_solutions(num_heuristics,
-                                                                steps=-1)
+            heuristic_solutions = self.find_heuristic_solutions(
+                num_heuristics, steps=round(self.num_cities))
+
+            #  #  find local optimums of heuristic solutions
+            for individual in heuristic_solutions:
+                new_route = self.local_search(individual.route,
+                                              self.distance_matrix)
+                individual.set_route(new_route)
+
             self.population += heuristic_solutions
 
         num_randoms = self.lambda_ - len(self.population)
@@ -99,6 +106,12 @@ class TSPEvolutionaryAlgorithm:
         self.population += [
             Individual(distance_matrix) for _ in range(num_randoms)]
 
+        self.population += heuristic_solutions
+        #
+        #  for individual in self.population:
+        #      new_route = self.local_search(individual.route,
+        #                                    self.distance_matrix)
+        #      individual.set_route(new_route)
 
         # calculate mean fitness of initial population
         self.mean_objective = self.calc_mean_objective()
@@ -111,19 +124,18 @@ class TSPEvolutionaryAlgorithm:
                                  ) -> list:
         heuristic_solutions = []
         start_cities = np.random.choice(self.num_cities, num_heuristics)
-        heuristic_solutions = [
-            self.find_heuristic_solution(city, steps) for city in start_cities]
+        heuristic_solutions = [self.find_heuristic_solution(city, steps)
+                               for city in start_cities]
 
         return heuristic_solutions
 
     def find_heuristic_solution(self, city: int, steps: int = -1) -> Individual:
-        num_cities = len(self.sorted_city_map)
-        available_cities = list(range(num_cities))
+        available_cities = list(range(self.num_cities))
         new_route = [city]
         available_cities.remove(city)
 
         if steps == -1:
-            steps = num_cities
+            steps = self.num_cities
 
         while len(new_route) != len(self.distance_matrix) and steps > 0:
             nearest_neighbours = self.sorted_city_map[new_route[-1]]
@@ -133,6 +145,8 @@ class TSPEvolutionaryAlgorithm:
                     available_cities.remove(next_nn)
                     break
 
+            steps -= 1
+
         random.shuffle(available_cities)
         new_route += available_cities
 
@@ -141,6 +155,7 @@ class TSPEvolutionaryAlgorithm:
         return individual
 
     def calc_sorted_city_map(self) -> dict:
+        """ Finds the list of nearest neighbours of each city """
         sorted_city_map = {}
 
         for city in range(self.distance_matrix.shape[0]):
@@ -153,12 +168,16 @@ class TSPEvolutionaryAlgorithm:
     def state(self) -> str:
         """ Returns the state of the optimization """
         return \
-                f'#{self.iteration} ' +\
+                f'#{self.iteration} ' + \
                 f'Best Objective: {self.best_objective} - ' + \
                 f'Mean Objective: {self.mean_objective} - ' + \
                 f'Diversity: {self.diversity}'
 
-    def converged(self, improvement_criterion=False, max_iterations=0) -> None:
+    def converged(self,
+                  improvement_criterion: bool = False,
+                  improvement_threshold: int = 50,
+                  max_iterations: int = 0
+                  ) -> None:
         """ Returns True if the optimization has converged """
         converged = False
 
@@ -170,13 +189,8 @@ class TSPEvolutionaryAlgorithm:
             converged = True
             print('Mean objective reached best objective')
         elif improvement_criterion:
-            #  if self.iteration > 20:
-                #  num_iterations = int(self.iteration * 0.3)
-                #  if np.std(self.best_history[-num_iterations:]) < 1e-7:
-                    #  print('No improvement of best objective for several iters')
-                    #  converged = True
-            if  self.iteration > 50:
-                if np.std(self.best_history[-50:]) < 1e-7:
+            if  self.iteration > improvement_threshold:
+                if np.std(self.best_history[-improvement_threshold:]) < 1e-7:
                     converged = True
         else:
             converged = False
@@ -191,7 +205,7 @@ class TSPEvolutionaryAlgorithm:
         mean = 0
         num_individuals = len(self.population)
         for individual in self.population:
-            mean += individual.fitness / num_individuals
+            mean += individual.actual_fitness / num_individuals
 
         return mean
 
@@ -240,7 +254,7 @@ class TSPEvolutionaryAlgorithm:
                 individual.set_route(new_route)
 
         # elimination
-        if self.fitness_sharing and self.diversity < 0.2:
+        if self.fitness_sharing: #and self.diversity < 0.3:
             self.population = fitness_sharing_elimination(
                 all_offspring, self.population, self.lambda_,
                 self.fs_alpha, self.fs_sigma)
@@ -262,5 +276,5 @@ class TSPEvolutionaryAlgorithm:
         self.mean_history.append(self.mean_objective)
         self.diversity_history.append(self.diversity)
 
-        sigmas = [ind.sigma for ind in self.population]
-        print(min(sigmas), max(sigmas), np.std(sigmas))
+        #  sigmas = [ind.sigma for ind in self.population]
+        #  print(min(sigmas), max(sigmas), np.std(sigmas))

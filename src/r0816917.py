@@ -1,7 +1,7 @@
 """ Class for testing an evolutionary algorithm solving TSP problems """
 import numpy as np
 import Reporter
-from tsp_genetic_algorithm import TSPGeneticAlgorithm
+from local_search_operators import TSP
 
 
 # Modify the class name to match your student number.
@@ -23,10 +23,21 @@ class r0816917:
         file.close()
 
         # Your code here.
+        num_cities = len(distance_matrix)
+        edges = []
+        for i in range(num_cities):
+            for j in range(num_cities):
+                edges += [(i, j, distance_matrix[i][j])]
+        tsp = TSP(list(range(num_cities)), edges)
+        tour = tsp.greedyTour(startnode=None, randomized=False)
+        print(tour)
+
+        twoopttour = tsp.twoOPT(tour)
+        print(tour)
 
         # Initialize a genetic algorithm instance using the given TSP problem
-        ga = TSPGeneticAlgorithm(distance_matrix)
-
+        #  ga = TSPGeneticAlgorithm(distance_matrix)
+        """
         while not ga.converged():
 
             # Your code here.
@@ -58,5 +69,14 @@ class r0816917:
 
         # print final state of optimization
         print(ga.state)
+        """
 
         return 0
+
+
+if __name__ == '__main__':
+    demo = TSPDemo()
+    #  demo.optimize('datasets/tour29.csv')
+    #  demo.optimize('datasets/tour100.csv')
+    demo.optimize('datasets/tour194.csv')
+    #  demo.optimize('datasets/tour929.csv')

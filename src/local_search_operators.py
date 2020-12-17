@@ -1,4 +1,5 @@
 import time
+import random
 
 
 def two_opt(route, distance_matrix, timeout=1):
@@ -7,6 +8,7 @@ def two_opt(route, distance_matrix, timeout=1):
     ts = time.time()
 
     while improved and time.time() - ts < timeout:
+
         improved = False
         for i in range(1, len(route) - 2):
             for j in range(i + 1, len(route)):
@@ -14,9 +16,10 @@ def two_opt(route, distance_matrix, timeout=1):
                     continue
 
                 if cost_change(distance_matrix,
-                               best[i - 1], best[i], best[j - 1], best[j]) < 0:
+                               best[i - 1], best[i], best[j - 1], best[j]) <= 0:
                     best[i:j] = best[j - 1:i - 1:-1]
                     improved = True
+
         route = best
 
     return best
@@ -30,19 +33,29 @@ def three_opt(tour, distances, timeout=1):
     ts = time.time()
     while True and time.time() - ts < timeout:
         delta = 0
-        for (a, b, c) in all_segments(len(tour)):
+        segments = all_segments(len(tour))
+        random.shuffle(segments)
+        for (a, b, c) in segments:
             delta += reverse_segment_if_better(tour, a, b, c, distances)
+
+            if time.time() - ts < timeout:
+                break
+
+            if delta >= 0:
+                break
+
         if delta >= 0:
             break
+
 
     return tour
 
 def all_segments(n: int, timeout=1):
     """Generate all segments combinations"""
-    return ((i, j, k)
+    return [(i, j, k)
         for i in range(n)
         for j in range(i + 2, n)
-        for k in range(j + 2, n + (i > 0)))
+        for k in range(j + 2, n + (i > 0))]
 
 def reverse_segment_if_better(tour, i, j, k, distances):
     """If reversing tour[i:j] would make the tour shorter, then do it."""

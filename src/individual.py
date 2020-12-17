@@ -9,6 +9,7 @@ class Individual:
         self.distance_matrix = distance_matrix
         self.route = None
         self.fitness = None
+        self.actual_fitness = None
         self.edges = None
         self.sigma = sigma
         self.gamma = gamma
@@ -60,7 +61,7 @@ class Individual:
             raise ValueError('Invalid udpate of route of individual')
 
         self.route = route
-        self.fitness = self.calc_fitness()
+        self.actual_fitness = self.fitness = self.calc_fitness()
         self.edges = [(route[idx], route[(idx + 1) % self.size])
                       for idx in range(self.size)]
 
@@ -82,6 +83,7 @@ class Individual:
         num_edges = len(self.edges)
 
         return num_edges - len(intersection)
+
 
     def calc_shared_fitness(self, population=None, alpha=1, sigma=1) -> None:
         if population is None:

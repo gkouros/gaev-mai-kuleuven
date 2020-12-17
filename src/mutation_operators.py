@@ -21,6 +21,7 @@ def swap_mutation(individual: Individual) -> Individual:
         idx1, idx2 = np.random.choice(len(route), 2)
         route[idx1], route[idx2] = route[idx2], route[idx1]
         sigma += gamma * (np.random.random() - 0.5)
+        sigma = max(0, sigma)
 
     mutated_individual = Individual(individual.distance_matrix, route,
                                     sigma, gamma)
@@ -48,6 +49,7 @@ def inversion_mutation(individual: Individual) -> Individual:
         idx1, idx2 = np.sort(np.random.choice(len(route), 2))
         route[idx1:idx2] = route[idx1:idx2][::-1]
         sigma += gamma * (np.random.random() - 0.5)
+        sigma = max(0, sigma)
 
     mutated_individual = Individual(individual.distance_matrix, route,
                                     sigma, gamma)
