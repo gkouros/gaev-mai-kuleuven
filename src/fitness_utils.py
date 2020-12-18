@@ -13,6 +13,7 @@ def calc_fitness(route: list, distance_matrix: np.array) -> float:
         float: The total distance of the route of the individual
     """
     dist = 0
+    size = len(distance_matrix)
 
     for idx, from_city in enumerate(route):
         to_city = route[(idx+1) % size]
