@@ -231,12 +231,11 @@ class TSPEvolutionaryAlgorithm:
 
     def calc_mean_objective(self) -> float:
         """ Returns the mean fitness of the population """
-        mean = 0
         num_individuals = len(self.population)
-        for individual in self.population:
-            mean += individual.actual_fitness / num_individuals
+        sum_fitness = sum([individual.fitness
+                           for individual in self.population])
 
-        return mean
+        return sum_fitness / num_individuals
 
     @property
     def best_objective(self) -> float:

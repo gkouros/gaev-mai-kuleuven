@@ -9,7 +9,6 @@ class Individual:
         self.distance_matrix = distance_matrix
         self.route = None
         self.fitness = None
-        self.actual_fitness = None
         self.edges = None
         self.sigma = sigma + gamma * (np.random.random() - 0.5)
         self.gamma = gamma
@@ -61,7 +60,7 @@ class Individual:
             raise ValueError('Invalid udpate of route of individual')
 
         self.route = route
-        self.actual_fitness = self.fitness = self.calc_fitness()
+        self.fitness = self.calc_fitness()
         self.edges = [(route[idx], route[(idx + 1) % self.size])
                       for idx in range(self.size)]
 
