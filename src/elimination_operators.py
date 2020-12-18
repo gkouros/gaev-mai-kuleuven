@@ -1,5 +1,7 @@
 """ Elimination methods for evolutionary algorithms """
+import numpy as np
 from selection_operators import k_tournament_selection
+from fitness_utils import calc_shared_fitnesses
 
 
 def fitness_sharing_elimination(
@@ -15,8 +17,20 @@ def fitness_sharing_elimination(
     Returns:
         new_combined: Top lambda_ candidates that are retained
     """
-    return lambda_plus_mu_elimination(offspring, population, lambda_,
-                                      True, alpha, sigma)
+    # combine population and offspring
+    combined = population + offspring
+
+    # sort new population
+    combined = sorted(combined, key=lambda k: k.fitness, reverse=False)
+
+    survivors = [combined[0]]
+
+    for _ in range(lambda_):
+        fitnesses = [calc_shared_fitnesses(combined, survivors, alpha, sigma)]
+        idx = np.argmin(fitnesses)
+        survivors.append(combined[idx])
+
+    return survivors
 
 
 def lambda_plus_mu_elimination(

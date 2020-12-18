@@ -1,5 +1,7 @@
 import numpy as np
 from individual import Individual
+from itertools import permutations, chain
+from fitness_utils import calc_fitness
 
 
 def swap_mutation(individual: Individual) -> Individual:
@@ -20,13 +22,18 @@ def swap_mutation(individual: Individual) -> Individual:
     for _ in range(round(individual.sigma)):
         idx1, idx2 = np.random.choice(len(route), 2)
         route[idx1], route[idx2] = route[idx2], route[idx1]
-        sigma += gamma * (np.random.random() - 0.5)
-        sigma = max(0, sigma)
+
+    sigma += gamma * (np.random.random() - 0.5)
+    sigma = max(0, sigma)
 
     mutated_individual = Individual(individual.distance_matrix, route,
                                     sigma, gamma)
 
     return mutated_individual
+    #  if mutated_individual.fitness > individual.fitness:
+        #  return mutated_individual
+    #  else:
+        #  return individual
 
 
 def inversion_mutation(individual: Individual) -> Individual:
@@ -48,10 +55,48 @@ def inversion_mutation(individual: Individual) -> Individual:
     for _ in range(round(individual.sigma)):
         idx1, idx2 = np.sort(np.random.choice(len(route), 2))
         route[idx1:idx2] = route[idx1:idx2][::-1]
-        sigma += gamma * (np.random.random() - 0.5)
-        sigma = max(0, sigma)
+
+    sigma += gamma * (np.random.random() - 0.5)
+    sigma = max(0, sigma)
 
     mutated_individual = Individual(individual.distance_matrix, route,
                                     sigma, gamma)
 
+    return mutated_individual
+    #  if mutated_individual.fitness > individual.fitness:
+        #  return mutated_individual
+    #  else:
+        #  return individual
+
+def greedy_mutation(individual: Individual) -> Individual:
+
+    sigma = individual.sigma
+    gamma = individual.gamma
+    num_cities = len(individual.distance_matrix)
+    route = individual.route
+    k = 4  # np.random.choice(range(4, 8))
+    nodes = sorted(np.random.choice(num_cities, k))
+
+    segments = []
+    start = 0
+    for idx in range(k):
+        segments += [route[start:nodes[idx]+1]]
+        start = nodes[idx]+1
+
+    segments += [route[start:]]
+
+    best_route = route
+    best_fitness = individual.fitness
+    perms = permutations(segments)
+
+    for perm in perms:
+        new_route = list(chain.from_iterable(perm))
+        new_fitness = calc_fitness(new_route, individual.distance_matrix)
+
+        if new_fitness < best_fitness:
+            best_fitness = new_fitness
+            best_route = new_route
+
+    mutated_individual = Individual(individual.distance_matrix, best_route,
+                                    sigma, gamma)
     return mutated_individual

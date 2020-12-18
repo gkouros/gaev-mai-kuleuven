@@ -2,6 +2,31 @@ import numpy as np
 from individual import Individual
 
 
+def calc_shared_fitnesses(population, survivors, alpha=1, sigma=1) -> None:
+    """ Calculates the fitness of a population given an existing survivor list
+
+    Args:
+        population (list): The population to calculate the shared fitness of
+        survivors (list): The list of survivors affecting neighbourhood
+        alpha (float):
+        sigma (int):
+
+    Returns:
+        float: The total distance of the route of the individual
+    """
+    fitnesses = np.array([individual.fitness for individual in population])
+    dists = np.array(
+        [[individual.distance_to(survivor)
+          for survivor in survivors]
+            for individual in population])
+
+    shared = (1 - (dists / sigma) ** alpha)
+    shared *= (dists <= sigma)
+    sum_shared = np.sum(shared, axis=1)
+    shared_fitnesses = fitnesses * sum_shared
+
+    return shared_fitnesses
+
 def calc_fitness(route: list, distance_matrix: np.array) -> float:
     """ Calculates the fitness of the individual as the total distance
 

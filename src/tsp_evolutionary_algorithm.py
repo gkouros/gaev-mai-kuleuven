@@ -1,12 +1,12 @@
-import numpy as np
+import time
 import random
 from copy import deepcopy
-import multiprocessing
+import numpy as np
 
 from individual import Individual
 from selection_operators import k_tournament_selection
 from recombination_operators import order_crossover
-from mutation_operators import swap_mutation, inversion_mutation
+from mutation_operators import swap_mutation, inversion_mutation, greedy_mutation
 from elimination_operators import lambda_plus_mu_elimination, replace_worst, \
         fitness_sharing_elimination, k_tournament_elimination
 from local_search_operators import two_opt, three_opt
@@ -21,7 +21,7 @@ class TSPEvolutionaryAlgorithm:
                  distance_matrix: np.array,
                  lambda_: int = 100,
                  mu: int = 20,
-                 k: int = 4,
+                 k: int = 3,
                  recombination_probability: float = 0.9,
                  mutation_probability: float = 0.1,
                  local_search_probability: float = 0.3,
@@ -40,9 +40,11 @@ class TSPEvolutionaryAlgorithm:
         self.k = k
         self.recombination_probability = recombination_probability
         self.mutation_probability = mutation_probability
+        self.mutation_strength = mutation_strength
         self.local_search_probability = local_search_probability
         self.fs_alpha = fitness_sharing_alpha
         self.fs_sigma = fitness_sharing_sigma
+        self.counts = [1, 1, 1]
 
         # flags
         self.fitness_sharing = True
@@ -67,21 +69,33 @@ class TSPEvolutionaryAlgorithm:
         self.mean_history = [self.mean_objective]
         self.diversity_history = [self.diversity]
 
-        print('Population initialized!')
 
     def mutation(self, individual):
         prob = random.random()
+        s = sum(self.counts)
+        f = [c / s for c in self.counts]
+        #  print(f)
+        F = [f[0], f[0]+f[1], 1]
+        #  F = [0, 1, 1]
 
-        if prob < 1:
-            return inversion_mutation(individual)
+        if prob < F[0]:
+            new_individual = inversion_mutation(individual)
+            if new_individual.fitness < individual.fitness:
+                self.counts[0] += 1
+        elif prob < F[1]:
+            new_individual = greedy_mutation(individual)
+            if new_individual.fitness < individual.fitness:
+                self.counts[1] += 1
         else:
-            return swap_mutation(individual)
+            new_individual = swap_mutation(individual)
+            if new_individual.fitness < individual.fitness:
+                self.counts[2] += 1
+
+        return new_individual
 
     def generate_population(self, distance_matrix, heuristic_search=False
                            ) -> None:
-        """ Generates the initial population
-
-        90% random and 10% heuristics
+        """ Generates the initial population 90% random and 10% heuristics
 
         Args:
             distance_matrix (np.array): The distances between the cities
@@ -93,32 +107,32 @@ class TSPEvolutionaryAlgorithm:
             heuristic_solutions = self.find_heuristic_solutions(
                 num_heuristics, steps=round(self.num_cities))
 
-            #  #  find local optimums of heuristic solutions
-            for individual in heuristic_solutions:
-                new_route = self.local_search(individual.route,
-                                              self.distance_matrix)
-                individual.set_route(new_route)
+            # optimize heuristic candidate solutions
+            #  for individual in heuristic_solutions:
+            #      new_route = self.local_search(individual.route,
+            #                                    self.distance_matrix)
+            #      individual.set_route(new_route)
 
             self.population += heuristic_solutions
 
         num_randoms = self.lambda_ - len(self.population)
+        random_solutions = [
+            Individual(distance_matrix, sigma=self.mutation_strength)
+            for _ in range(num_randoms)]
+        self.population = random_solutions + heuristic_solutions
 
-        self.population += [
-            Individual(distance_matrix) for _ in range(num_randoms)]
-
-        self.population += heuristic_solutions
-        #
+        # optimize whole initial population
         #  for individual in self.population:
         #      new_route = self.local_search(individual.route,
         #                                    self.distance_matrix)
         #      individual.set_route(new_route)
 
-        # calculate mean fitness of initial population
-        self.mean_objective = self.calc_mean_objective()
-        self.diversity = unique_fitnesses_normed(self.population)
-
         # sort population
         self.population = sorted(self.population, key=lambda k: k.fitness)
+
+        # calculate initial mean fitness and diversity
+        self.mean_objective = self.calc_mean_objective()
+        self.diversity = unique_fitnesses_normed(self.population)
 
     def find_heuristic_solutions(self, num_heuristics: int, steps: int = -1
                                  ) -> list:
@@ -150,7 +164,8 @@ class TSPEvolutionaryAlgorithm:
         random.shuffle(available_cities)
         new_route += available_cities
 
-        individual = Individual(self.distance_matrix, new_route)
+        individual = Individual(self.distance_matrix, new_route,
+                                sigma=self.mutation_strength)
 
         return individual
 
@@ -163,6 +178,20 @@ class TSPEvolutionaryAlgorithm:
                 self.distance_matrix[city, :])[1:]
 
         return sorted_city_map
+
+    def config(self) -> None:
+        print('TSP EA Config\n'
+              '-------------\n'
+              f'lambda = {self.lambda_}\n'
+              f'mu = {self.mu}\n'
+              f'k = {self.k}\n'
+              f'p_c = {self.recombination_probability}\n'
+              f'p_m = {self.mutation_probability}\n'
+              f'p_l = {self.local_search_probability}\n'
+              f'sigma_mu = {self.mutation_strength}\n'
+              f'fs_alpha = {self.fs_alpha}\n'
+              f'fs_sigma = {self.fs_sigma}\n'
+              '-------------')
 
     @property
     def state(self) -> str:
@@ -216,7 +245,7 @@ class TSPEvolutionaryAlgorithm:
 
     @property
     def best_solution(self) -> float:
-        """ returns the best candidate solution of the population """
+        """ Returns the best candidate solution of the population """
         return self.population[0]
 
 
@@ -248,13 +277,14 @@ class TSPEvolutionaryAlgorithm:
 
         # perform local search
         if prob_l < self.local_search_probability:
+            #  print('local_search')
             for individual in all_offspring:
                 new_route = self.local_search(individual.route,
                                               self.distance_matrix)
                 individual.set_route(new_route)
 
         # elimination
-        if self.fitness_sharing: #and self.diversity < 0.3:
+        if self.fitness_sharing:
             self.population = fitness_sharing_elimination(
                 all_offspring, self.population, self.lambda_,
                 self.fs_alpha, self.fs_sigma)

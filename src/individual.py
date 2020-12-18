@@ -93,7 +93,8 @@ class Individual:
         dists = np.array([self.distance_to(ind) for ind in population])
 
         # calculate fitness weight based on similar candidates
-        shared = (1 - (dists / sigma) ** alpha) * (dists <= sigma)
+        shared = (1 - (dists / sigma) ** alpha)
+        shared *= (np.array(dists > 0) <= sigma)
         sum_shared = max(1, np.sum(shared))
 
         # update fitness
