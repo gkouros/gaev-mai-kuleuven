@@ -21,9 +21,11 @@ def calc_shared_fitnesses(population, survivors, alpha=1, sigma=1) -> None:
             for individual in population])
 
     shared = (1 - (dists / sigma) ** alpha)
-    shared *= (dists <= sigma)
+    shared *= np.array(dists <= sigma)
     sum_shared = np.sum(shared, axis=1)
     shared_fitnesses = fitnesses * sum_shared
+    shared_fitnesses = np.where(np.isnan(shared_fitnesses),
+                                np.inf, shared_fitnesses)
 
     return shared_fitnesses
 
