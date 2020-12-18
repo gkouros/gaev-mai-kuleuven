@@ -5,8 +5,8 @@ from fitness_utils import calc_shared_fitnesses
 
 
 def fitness_sharing_elimination(
-    offspring: list, population: list, lambda_: int, alpha: float, sigma: int
-                                ) -> list:
+        offspring: list, population: list, lambda_: int,
+        alpha: float, sigma: int) -> list:
     """ Performs the (λ+μ)-elimination with fitness sharing
 
     Args:
