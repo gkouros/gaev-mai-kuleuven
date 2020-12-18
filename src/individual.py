@@ -4,14 +4,14 @@ import numpy as np
 class Individual:
     """ A candidate solution class for the TSP problem """
 
-    def __init__(self, distance_matrix, route=None, sigma=10, gamma=2):
+    def __init__(self, distance_matrix, route=None, sigma=1, gamma=2):
         self.size = len(distance_matrix)
         self.distance_matrix = distance_matrix
         self.route = None
         self.fitness = None
         self.actual_fitness = None
         self.edges = None
-        self.sigma = sigma
+        self.sigma = sigma + gamma * (np.random.random() - 0.5)
         self.gamma = gamma
         if route is None:
             self.set_route(np.random.permutation(self.size))
@@ -93,6 +93,8 @@ class Individual:
         dists = np.array([self.distance_to(ind) for ind in population])
 
         # calculate fitness weight based on similar candidates
-        sh = (1 - (dists[dists <= sigma] / sigma) ** alpha)
-        sum_sh = max(1, np.sum(sh))
-        self.fitness *= sum_sh
+        shared = (1 - (dists / sigma) ** alpha) * (dists <= sigma)
+        sum_shared = max(1, np.sum(shared))
+
+        # update fitness
+        self.fitness *= sum_shared
