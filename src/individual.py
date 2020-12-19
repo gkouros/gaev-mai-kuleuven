@@ -10,7 +10,7 @@ class Individual:
         self.route = None
         self.fitness = None
         self.edges = None
-        self.sigma = sigma + gamma * (np.random.random() - 0.5)
+        self.sigma = max(1, sigma + gamma * (np.random.random() - 0.5))
         self.gamma = gamma
 
         if route is None:
