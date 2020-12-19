@@ -32,7 +32,7 @@ class TSPDemo:
                                       mutation_strength=10,
                                       fitness_sharing_alpha=1,
                                       fitness_sharing_sigma=len(distance_matrix)//10)
-        ga.config()
+        print(ga.get_config())
         print(ga.state)
 
         while not ga.converged(
@@ -79,5 +79,5 @@ if __name__ == '__main__':
     demo = TSPDemo()
     #  demo.optimize('datasets/tour29.csv')
     #  demo.optimize('datasets/tour100.csv')
-    #  demo.optimize('datasets/tour194.csv')
-    demo.optimize('datasets/tour929.csv')
+    demo.optimize('datasets/tour194.csv')
+    #  demo.optimize('datasets/tour929.csv')
