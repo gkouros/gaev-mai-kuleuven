@@ -179,19 +179,19 @@ class TSPEvolutionaryAlgorithm:
 
         return sorted_city_map
 
-    def config(self) -> None:
-        print('TSP EA Config\n'
-              '-------------\n'
-              f'lambda = {self.lambda_}\n'
-              f'mu = {self.mu}\n'
-              f'k = {self.k}\n'
-              f'p_c = {self.recombination_probability}\n'
-              f'p_m = {self.mutation_probability}\n'
-              f'p_l = {self.local_search_probability}\n'
-              f'sigma_mu = {self.mutation_strength}\n'
-              f'fs_alpha = {self.fs_alpha}\n'
-              f'fs_sigma = {self.fs_sigma}\n'
-              '-------------')
+    def get_config(self) -> None:
+        return 'TSP EA Config\n' + \
+              '-------------\n' + \
+              f'lambda = {self.lambda_}\n' + \
+              f'mu = {self.mu}\n' + \
+              f'k = {self.k}\n' + \
+              f'p_c = {self.recombination_probability}\n' + \
+              f'p_m = {self.mutation_probability}\n' + \
+              f'p_l = {self.local_search_probability}\n' + \
+              f'sigma_mu = {self.mutation_strength}\n' + \
+              f'fs_alpha = {self.fs_alpha}\n' + \
+              f'fs_sigma = {self.fs_sigma}\n' + \
+              '-------------'
 
     @property
     def state(self) -> str:
@@ -292,7 +292,6 @@ class TSPEvolutionaryAlgorithm:
             #  self.population = k_tournament_elimination(
             #  self.population = replace_worst
                 all_offspring, self.population, self.lambda_)
-
 
         # update mean objective
         self.mean_objective = self.calc_mean_objective()

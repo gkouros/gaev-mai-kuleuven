@@ -47,7 +47,7 @@ class TSPDemo:
             # extract results of current generation
             mean_objective = ga.mean_objective
             best_objective = ga.best_objective
-            best_solution = ga.best_solution
+            best_solution = np.array(ga.best_solution.route)
 
             # print state of generation
             print(ga.state)

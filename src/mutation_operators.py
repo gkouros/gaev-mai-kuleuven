@@ -10,7 +10,7 @@ def swap_mutation(individual: Individual) -> Individual:
     Two genes are randomly selected and their values are swapped.
 
     Args:
-        individual (Individual): Individual that will be mutated with a mutation rate alpha.
+        individual (Individual): Individual that will be mutated
         sigma (int): The mutation strength
     Returns:
         individual (Individual): The mutated individual.

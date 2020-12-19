@@ -35,8 +35,7 @@ def fitness_sharing_elimination(
 
 def lambda_plus_mu_elimination(
         offspring: list, population: list, lambda_: int,
-        fitness_sharing: bool = False, alpha: float = 1, sigma: int = 1
-                               ) -> list:
+        alpha: float = 1, sigma: int = 1) -> list:
     """ Performs the (λ+μ)-elimination step of the evolutionary algorithm
 
     Args:
