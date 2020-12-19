@@ -75,8 +75,8 @@ class TSPEvolutionaryAlgorithm:
         s = sum(self.counts)
         f = [c / s for c in self.counts]
         #  print(f)
-        F = [f[0], f[0]+f[1], 1]
-        #  F = [0, 1, 1]
+        #  F = [f[0], f[0]+f[1], 1]
+        F = [0, 1, 1]
 
         if prob < F[0]:
             new_individual = inversion_mutation(individual)
@@ -102,7 +102,7 @@ class TSPEvolutionaryAlgorithm:
         """
         self.population = []
         if heuristic_search:
-            num_heuristics = int(self.lambda_ * 0.1)
+            num_heuristics = int(self.lambda_ * 0.2)
             self.sorted_city_map = self.calc_sorted_city_map()
             heuristic_solutions = self.find_heuristic_solutions(
                 num_heuristics, steps=round(self.num_cities))

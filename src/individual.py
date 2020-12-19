@@ -12,6 +12,7 @@ class Individual:
         self.edges = None
         self.sigma = sigma + gamma * (np.random.random() - 0.5)
         self.gamma = gamma
+
         if route is None:
             self.set_route(np.random.permutation(self.size))
         else:

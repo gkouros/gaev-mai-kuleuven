@@ -2,7 +2,7 @@ import time
 import random
 
 
-def two_opt(route, distance_matrix, timeout=2):
+def two_opt(route, distance_matrix, timeout=0.2):
     best = route
     improved = True
     ts = time.time()
