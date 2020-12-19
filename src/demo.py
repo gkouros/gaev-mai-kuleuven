@@ -49,9 +49,6 @@ class TSPDemo:
             best_objective = ga.best_objective
             best_solution = np.array(ga.best_solution.route)
 
-            # print state of generation
-            print(ga.state)
-
             # Call the reporter with:
             #  - the mean objective function value of the population
             #  - the best objective function value of the population
@@ -60,7 +57,10 @@ class TSPDemo:
             time_left = self.reporter.report(mean_objective,
                                              best_objective,
                                              best_solution)
-            print(time_left)
+
+            # print state of generation
+            print(ga.state, f'- time lieft={int(time_left)}')
+
             if time_left < 0:
                 break
 
