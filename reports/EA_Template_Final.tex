@@ -44,9 +44,9 @@
 
 \begin{itemize}
  \item \textbf{Group members during group phase:} Kostantinos Gkentsidis and Jeffrey Quicken
- \item \textbf{Time spent on group phase:} 20 hours
- \item \textbf{Time spent on final code:} 30 hours
- \item \textbf{Time spent on final report:} 10 hours
+ \item \textbf{Time spent on group phase:} 15 hours
+ \item \textbf{Time spent on final code:} 45 hours
+ \item \textbf{Time spent on final report:} 12 hours
 \end{itemize}
 
 \section{Modifications since the group phase}
@@ -59,13 +59,15 @@
 
 %\paragraph{} \ReplaceMe{Short description 1: State what modification you made (e.g., replaced top-$\lambda$ selection with $k$-tournament selection). What aspect of your evolutionary algorithm did it improve?} 
 
-\paragraph{Greedy Heuristic Initialization}: Added a heuristic initialization of candidate solutions in order to inject some good initial candidates to the random initial population and speed up the search of the optimum.
+\paragraph{Greedy Heuristic Initialization}: Added a heuristic initialization of candidate solutions in order to inject some good initial candidates to the random initial population and speed up the search of the optimum. For more information see Subsection \ref{ss:initialization}.
 
-\paragraph{Local Search:} Converted the evolutionary algorithm to a memetic algorithm through the inclusion of 2-opt/3-opt local search after the variation step of each iteration. This addition significantly improved convergence to really good candidate solutions.
+\paragraph{Local Search:} Converted the evolutionary algorithm to a memetic algorithm through the inclusion of 2-opt local search after the variation step of each iteration. This addition significantly improved convergence to really good candidate solutions. For more information see Subsection \ref{ss:local_search}.
 
-\paragraph{Mutation Self-Adaptivity:} Self-adaptivity was added to vary mutation rate and strength in order to improve the diversity of the population across iterations and prevent premature convergence.
+%\paragraph{Mutation Self-Adaptivity:} Self-adaptivity was added to vary mutation rate and strength in order to improve the diversity of the population across iterations and prevent premature convergence.
 
-\paragraph{Diversity Promotion}: Fitness sharing was added to the $(\lambda+\mu)$~elimination step to improve the diversity of the population across iterations and prevent premature convergence.
+\paragraph{Diversity Promotion}: Fitness sharing was added to the $(\lambda+\mu)$~elimination step to improve the diversity of the population across iterations and prevent premature convergence. For more information see Subsections \ref{ss:elimination} and \ref{ss:diversity_promotion} .
+
+\paragraph{Greedy Mutation:} Added a new mutation operator that uses a greedy approach to adapt an individual in the optimal way. For more information see Subsection \ref{ss:mut}
 
 
 \subsection{Issues resolved}
@@ -73,13 +75,13 @@
 
 %\paragraph{}\ReplaceMe{Short description 1: Describe the observation or problem from the group phase. Explain what caused this issue. How did you solve it (you can refer to the list of improvements)? Did fixing it significantly benefit your evolutionary algorithm? If you did not fix it: why not?}
 
-\paragraph{Depleting Diversity:} In the group phase, we detected a problem with diversity, meaning that our algorithm converged prematurely to locally optimal candidate solutions, thus preventing the discovery of better solutions. This issue was fixed through the addition of diversity promotion schemes, namely fitness-sharing elimination and self-adaptive mutation rate and strength.
+\paragraph{Depleting Diversity:} In the group phase, we detected a problem with diversity, meaning that our algorithm converged prematurely to locally optimal candidate solutions, thus preventing the discovery of better solutions. This issue was fixed through the addition of diversity promotion, increased mutation strength, and varying mutation operators.
 
 \paragraph{Premature convergence:} In the group phase, we used the $(\lambda+\mu)-elimination$ in combination with a convergence criterion of matching mean to best fitness. This resulted in a mostly exploitative behavior resulting in premature convergence. This issue was fixed by implementing methods for diversity promotion.
 
 \paragraph{Loss of Best Candidate:} In the individual phase it was discovered that sometimes the best candidate was lost across iterations. This was easily visible as unexplained spikes in the corresponding graph across iterations. This happened due to an unwanted modification of the original population during mutation. Fixing this bug cleared this error.
 
-\paragraph{Inefficient Crossover Operator:} The code used for the Order Crossover operator was taken from stackoverflow. In an effort to refine this code and remove needless code repetition, the operator was written from scratch and ended up being more efficient, shorter and more readable.
+\paragraph{Inefficient Crossover Operator:} The code used for the Order Crossover operator was taken from stackoverflow. In an effort to refine this code and remove needless code repetition, the operator was rewritten from scratch and ended up being more efficient, shorter and more readable.
 
 \section{Final design of the evolutionary algorithm} 
 
@@ -87,212 +89,232 @@
 
 %\ReplaceMe{In this section, you should describe all components of your final evolutionary algorithm and how they fit together.}
 
-\subsection{Representation}
+\subsection{Representation} \label{ss:representation}
 
 %\ReplaceMe{How do you represent the candidate solutions? What is your motivation to choose this one? What other options did you consider? How did you implement this specifically in Python (e.g., a list, set, numpy array, etc)?}
 
-The authors in ~\cite{davis} present five different representations for TSP: Binary, Path, Adjacency, Ordinal, and Matrix representations. Based on a review of the different methods in the same research, it was decided in the group phase to select the \textbf{Path} / \textbf{Permutation Representation}, because of its better performance, operator variety, and explainability. The same representation was kept in the individual phase. This  Path representation was implemented as a python class called Individual that stores a list of integers representing indices of cities with respect to the given distance matrix. The route of the candidate solution is checked against errors on update and hence the use of python sets was deemed redundant.
-\subsection{Initialization}
+In Davis et al ~\cite{davis}, five different representations are presented for TSP: Binary, Path, Adjacency, Ordinal, and Matrix representations. Based on a review of the different methods in the same research, it was decided in the group phase to select the \textbf{Path} / \textbf{Permutation Representation}, because of its better performance, operator variety, and explainability. The same representation was kept in the individual phase. This  Path representation was implemented as a python class called Individual that stores a list of integers representing indices of cities with respect to the given distance matrix. The route of the candidate solution is checked against errors on update and hence the use of python sets was deemed redundant.
+
+\subsection{Initialization} \label{ss:initialization}
 
 %\ReplaceMe{How do you initialize the population? How did you determine the number of individuals? Did you implement advanced initialization mechanisms (local search operators, heuristic solutions)? If so, describe them. Do you believe your approach maintains sufficient diversity? How do you ensure that your population enrichment scheme does not immediately take over the population? Did you implement other initialization schemes that did not make it to the final version? Why did you discard them? How did you determine the population size?}
 
 In the group phase, a random initialization was used for the population resulting in high diversity with a high probability given a big enough population size $\lambda$. In order to achieve good results, it was decided to use a quite large population (1000-2000).
 
-In the individual phase, the initialization step was augmented with a number (eg. 10) of greedy heuristic candidate solutions in order to provide some direction to the search and avoid reinventing the wheel. The greedy heuristic search starts from a random city keeps following the shortest path from city to city until all cities are visited only once and finally ends up on the first city.  
+In the individual phase, the initialization step was augmented with a number of greedy heuristic candidate solutions in order to provide some direction to the search and avoid reinventing the wheel. The greedy heuristic search starts from a random city keeps following the shortest path from city to city until all cities are visited exactly once and finally ends up on the first city.  
 
-The use of really good candidate solutions entails the danger of taking over the population fairly quickly. However, this issue can be mitigated by limiting the steps of the greedy search, although, because of the implemented diversity promotion schemes, it was not deemed necessary.
+The use of really good candidate solutions entails the danger of taking over the population fairly quickly. However, this issue can be mitigated by limiting the number of heuristic candidate solutions or limiting the steps of the greedy search. Both methods were implemented and based on experiments it was decided to apply greedy search for $10\%$ of the initial population
 
-Furthermore, the addition local search and diversity promotion, allowed the use of a population size that's one magnitude smaller $(\lambda = 100)$. Using a lower population size resulted in better performance and more iterations, while no severe impact was noted on the final results.
+Furthermore, the addition local search and diversity promotion, allowed the use of a population and offspring size that's two magnitudes smaller ($\lambda = 10, \mu=5$). Using a lower population and offspring size resulted in better performance with more iterations and no impact on the final results.
 
-\subsection{Selection operators}
+\subsection{Selection operators} \label{ss:selection}
 
 %\ReplaceMe{Which selection operators did you implement? If they are not from the slides, describe them. Can you motivate why you chose this one? Are there parameters that need to be chosen? Did you use an advanced scheme to vary these parameters throughout the iterations? Did you try other selection operators not included in the final version? Why did you discard them?}
-Similarly to the group phase, k-tournament selection was picked for the individual phase as well. This selection method performed really well before and offered a nice balance between exploration and exploitation, hence it was decided to keep it.
+Similarly to the group phase, \textit{k-tournament selection} was picked for the individual phase as well. This selection method performed really well before and offered a nice balance between exploration and exploitation, hence it was kept in this phase as well. The only tunable parameter of this selection operator is the number $k$ of individuals that take part in a tournament.
 
-The only tunable parameter of this selection operator is the number $k$ of individuals that take part in a tournament. During the tuning phase of the group phase a $k = 4$ was selected because of the good balance between convergence, exploration, and computational efficiency.
-
-\subsection{Mutation operators} \label{ss_mut}
+\subsection{Mutation operators} \label{ss:mut}
 
 %\ReplaceMe{Which mutation operators did you implement? If they are not from the slides, describe them. How do you choose among several mutation operators? Do you believe it will introduce sufficient randomness? Can that be controlled with parameters? Do you use self-adaptivity? Do you use any other advanced parameter control mechanisms (e.g., variable across iterations)? Did you try other mutation operators not included in the final version? Why did you discard them?}
 
-In the group phase, we implemented two mutation operators for permutation-based problems, namely the swap and the mutation operator. Of the two, inversion mutation proved to produce better results, which was evident from a thorough literature review as well. The inversion mutation operator was chosen for the individual phase as well, since it was one of the best performing operators in the literature with regard to the TSP problem. Both mutation operators, however, were augmented with a new parameter called mutation strength $\sigma_m$, which, determines the number of successive applications of the operator on an individual.
+In the group phase, two mutation methods were used, namely inversion mutation and swap mutation. Both mutation operators, were extended in the individual phase with a new parameter called mutation strength $\sigma_\mu$, which determines the number of successive applications of the operator on an individual.
 
-The mutation rate and strength are initialized as $p_m=0.1$ and $\sigma_m=1$ and they are modified across iterations via an adaptive parameter control scheme with a view to keep diversity above a certain threshold. This approach was inspired from \cite{mut_adapt} and involves two steps.
+Besides, those two mutation operators, a new greedy mutation operator was implemented in the individual phase. This operator removes four edges from a route randomly, resulting in five unconnected segments, which are greedily reconnected by finding the segment permutation with the best fitness.
 
-\begin{enumerate}
-\item Estimating the diversity $d$ of the current iteration of the algorithm as the normalized number of unique individual fitnesses.
+Initially each mutation operator was assigned equal probability $33.333\%$ to be chosen. However, in a trial of adaptive parameter control with a reward system, it was discovered that the greedy mutation operator improved solutions more consistently and took over the operator selection, so in the end it was decided to use only the greedy mutation operator.
 
-\item Updating the mutation rate $p_m$ and strength $\sigma_m$ according Eq. \ref{adapt_eq}
-
-\begin{equation} \label{adapt_eq}
-p' = max(p_{min},~min(p_{max}, ~p (1 + \frac{\xi (d_t-d)}{d})))
-\end{equation}
-where $p'$, $p$, $p_{min}$, $p_{max}$ are the adapted value, previous value, lower bound, and upper bound of the parameter to self adapt. Moreover, $\xi$ is the control of the adaptivity, $d$ is the current diversity and $d_t$ is the desired diversity.
-
-\end{enumerate}
-
-
-\subsection{Recombination operators}
+\subsection{Recombination operators} \label{ss:recombination}
 
 %\ReplaceMe{Which recombination operators did you implement? If they are not from the slides, describe them. How do you choose among several recombination operators? Why did you choose these ones specifically? Explain how you believe that these operators can produce offspring that combine the best features from their parents. How does your operator behave if there is little overlap between the parents? Can your recombination be controlled with parameters; what behavior do they change? Do you use self-adaptivity? Do you use any other advanced parameter control mechanisms (e.g., variable across iterations)? Did you try other recombination operators not included in the final version? Why did you discard them? Did you consider recombination with arity strictly greater than 2?}
 
-In the individual phase, it was decided to reuse the \textit{Order Crossover} \cite{davis} operator, since it performs really well for order-based permutation problems like TSP according to the literature eg. \cite{memetic} and based on experiments. In addition, another advantage of this operator is that it ensures the generation of only valid offspring and thus doesn't require the need to implement a repair mechanism.
-
-The only change regarding this operator was the rewritting of its code to make it more efficient and readable.
+In the individual phase, it was decided to reuse the \textit{Order Crossover} \cite{davis} operator, since it performs really well for order-based permutation problems like TSP according to the literature eg. \cite{memetic} and based on experiments. The only change regarding this operator was the rewritting of its code to make it more efficient and readable.
 
 The operator consists of the following steps:
-\begin{itemize}
+\begin{enumerate}
 \item Copy a segment between two randomly generated crossover points of the first parent to the first child.
 \item Starting from the second crossover point on the second parent this time, start copying its genes/alleles that are not already contained on the child, until the child is full.
 \item Create the second child like the first but with the reverse order of the parents.
-\end{itemize}
+\end{enumerate}
+
+One advantage of this operator is that it ensures the generation of only valid offspring and thus doesn't require the need to implement a repair mechanism. Moreover, the fact that the operator preserves the order of the cities from the parents is especially beneficial to Asymetric TSP problems, since it preserves good edges more effectively.
 
 The operator, in general, preserves a segment of the first parent on the child and then tries to fill the rest with the city order of the second parent, thus preserving useful information from both parents. At the same time, because of the combination of two random parents that may or may not have much overlap, the resulting children can be similar to the parents and explore new space, while always producing valid candidate solutions.
 
-One enhancement that was considered was to add more recombination operators that vary significantly to Order Crossover and then have each individual randomly select its own, which would potentially result in greater exploration of the search space.
+Two enhancements ideas were considered regarding recombination operators. First was the possibility to add more recombination operators that vary significantly to Order Crossover and then self-adaptively select the best performing one per individual. This would provide some extra variation in the solutions, while at the same time, one operator might perform better in the beginning and another at the end close to convergence. Secondly, it seemed beneficial to implement the Distance Preserving Crossover (DPX) operator \cite{dpx} which removes the edges that do not exist in both parents and then greedily reconnects the resulting segments.
 
-\subsection{Elimination operators} \label{ss_elim}
+\subsection{Elimination operators} \label{ss:elimination}
 
 %\ReplaceMe{Which elimination operators did you implement? If they are not from the slides, describe them. Why did you select this one? Are there parameters that need to be chosen? Did you use an advanced scheme to vary these parameters throughout the iterations? Did you try other elimination operators not included in the final version? Why did you discard them?}
 
 In the group phase, there was no choice but to use the $(\lambda+\mu)-elimination$ operator, which did not achieve a good balance between exploration and exploitation. This method chooses the top-$\lambda$ candidates and eliminates worse candidate solutions that could result in better results after a few generations. Instead it even promotes similar candidates that have high fitness, which often causes premature convergence.
 
-In the individual phase, two more elimination operators were implemented, namely, \textit{fitness-sharing-based elimination} and \textit{replace-worst elimination}.
+In the individual phase, two more elimination operators were implemented, namely, \textit{fitness-sharing-based elimination} and \textit{replace-worst elimination}. Both aimed at preserving diversity.
 
-Fitness-sharing-based elimination is basically implemented as $(\lambda+\mu)-elimination$ with a recalculated fitness of each individual based on the number of its neighbouring individuals. This basically means that the fitness of similar individuals in the population is increased, so that more diverse individuals make it to the next generation. The best candidate solution of each generation is not weighted so that it's not eliminated.
+Fitness-sharing-based elimination is basically implemented as $(\lambda+\mu)-elimination$ with a recalculated fitness of each individual based on the number of its neighbouring individuals. The idea behind fitness sharing, according to \cite{eiben}, is to prevent very similar candidate solutions from overtaking the population by increasing their cost during selection or elimination based on their number of closely resembling neighbours. The distance metric that was used to determine the similarity of two individuals is the number of uncommon edges.
 
 Replace-worst elimination results in a more diverse population than the simple $(\lambda+\mu)-elimination$ by keeping the $\lambda-\mu$ best individuals from the original population and replacing the rest with new offspring. This requires that $\lambda > \mu$.
 
-Out of all three, the fitness-sharing-based elimination achieved the best and most consistent results and prevented premature conversion. Although, one main problem with this method is that it invalidates the previously used convergence criteria, since it does not allow the mean fitness to converge to the best fitness.
+Out of all three, the fitness-sharing-based elimination achieved the best and most consistent results and was the most successful at preventing premature convergence.
 
-\subsection{Local search operators}
+\subsection{Local search operators} \label{ss:local_search}
 
 %\ReplaceMe{What local search operators did you implement? Describe them. Did they cause a significant improvement in the performance of your algorithm? Why (not)? Did you consider other local search operators that did not make the cut? Why did you discard them? Are there parameters that need to be determined in your operator? Do you use an advanced scheme to determine them (e.g., adaptive or self-adaptive)?}
-The absence of a local search operator in the group phase meant that the implemented evolutionary algorithm required a considerable amount of iterations or a really large population in order to find a good solution. As a result, it was deemed imperative to implement a local search operator for the individual phase. After a thorough literature review of the available methods, it was decided to proceed with k-opt local search, proposed by Croes et al \cite{k-opt}.
+The absence of a local search operator in the group phase meant that the implemented evolutionary algorithm required a considerable amount of iterations and a really large population in order to find a good solution. As a result, it was deemed imperative to implement a local search operator for the individual phase. After a thorough literature review of the available methods, it was decided to proceed with k-opt local search, proposed by Croes et al \cite{k-opt}.
 
-The local search operator was implemented for $k=2$ and $k=3$. However, the 3-opt operator proved quite inefficient especially for the larger problems and thus was abandoned in favor of 2-opt. A basic 2-opt local search algorithm will try all possible swap combinations that will result in an improvement of the fitness of an individual. If no more improvement can be made then it returns.
+The local search operator was implemented for $k=2$ and $k=3$. However, the 3-opt operator proved quite inefficient especially for the larger problems and thus was abandoned in favor of 2-opt, despite it being more suitable for the Asymetric TSP. A basic 2-opt local search algorithm will try all possible swap combinations that will result in an improvement of the fitness of an individual.
 
-Although, 2-opt increases the computational complexity of the algorithm, at the same time, it results in quicker discovery of really good solutions. For really large problems, however, the operator proves extremely slow and thus a two-pronged approach has been implemented to optimize the evolutionary algorithm. Firstly, a new parameter has been introduced that determines the probability threshold $p_l$ for executing local search in a generation. Secondly, a timeout of one second has been added to the two-opt local operator. As a result, the operator will perform the maximum number of improvements it manages in the one second period.
+Although, 2-opt increases the computational complexity of the algorithm, at the same time, it results in quicker discovery of really good solutions. For really large problems, however, the operator proves extremely slow and thus a two-pronged approach has been implemented to optimize the evolutionary algorithm. Firstly, a new parameter has been introduced that determines the probability threshold $p_l$ for executing local search in a generation. Secondly, a timeout has been added to the operator. As a result, the operator will perform the maximum number of improvements it manages in the one allowed time window.
 
 
-\subsection{Diversity promotion mechanisms}
+\subsection{Diversity promotion mechanisms} \label{ss:diversity_promotion}
 
 %\ReplaceMe{Did you implement a diversity promotion scheme? If yes, which one? If no, why not? Describe the mechanism you implemented. In what sense does the mechanism improve the performance of your evolutionary algorithm? Are there parameters that need to be determined? Did you use an advanced scheme to determine them?}
 
-In the individual phase, two diversity promotion mechanisms were implemented. The first one involves a varying mutation rate and strength, which was described in detail in Subsection \ref{ss_mut}. The second one is fitness sharing, it is implemented in the elimination step and it's described in more detail in Subsection \ref{ss_elim}.
+In the individual phase, two diversity promotion mechanisms were implemented. The first one involves a varying mutation rate and strength, but it didn't manage to preserve diversity very well and was thus abandoned. The second one is fitness sharing, it is implemented in the elimination step and it's described in more detail in Subsection \ref{ss_elim}.
 
-There is no point in using both mechanisms at the same time, since the adaptive control of the mutation parameters activates when diversity lowers below a threshold, which doesn't happen when fitness sharing is active.
+The fitness sharing mechanism has two tunable parameters, the shape $\alpha$ and distance $\sigma$ that determine its sensitivity. A larger $\alpha$ value results in a higher penalty for each neighbour and $\sigma$ represents the distance between two individuals for them to be considered neighbours.
 
-The fitness sharing mechanism has two tunable parameters $\alpha$ and $\sigma$ that determine its sensitivity. A larger $\alpha$ value results in a higher penalty for each neighbour and $\sigma$ represents the distance between two individuals for them to be considered neighbours. 
-
-\subsection{Stopping criterion}
+\subsection{Stopping criterion} \label{ss:stopping_criterion}
 
 %\ReplaceMe{Which stopping criterion did you implement? Did you combine several criteria?}
 
-In the individual phase, two convergence criteria were used. The first one was the same that was used in the group phase. This criterion ended the algorithm when the mean fitness converged to the best fitness of the population. However, because of the diversity promotion mechanisms that were implemented, this criterion was replaced by a new one that simply checkeq if there was no improvement of the best fitness in $30\%$ of the past iterations, provided that at least $N=20$ iterations had passed.
+In the individual phase, two convergence criteria were combined. The first one was the same that was used in the group phase. This criterion stops the algorithm when the mean fitness converges to the best fitness of the population. However, because of the diversity promotion mechanisms that was implemented, this criterion never activates. As a result a second criterion was added that simply checks if there was no improvement of the best fitness in the last $100$ iterations.
 
-\subsection{The main loop}
+\subsection{The main loop} \label{ss:main_loop}
 
 %\ReplaceMe{Describe the main loop of your evolutionary algorithm using a clear picture (preferred) or high-level pseudocode. In what order do you apply the various operators? Why that order? If you are using several selection, mutation, recombination, elimination, and local search operators, describe how you choose among the possibilities. Are you selecting/eliminating all individuals in parallel, or one by one? With or without replacement?}
 
-\begin{center}
-\includegraphics[scale=0.7]{images/genetic_algorthm_main_loop.png} 
-\end{center}
+The order of the operators that are applied to the population in each generation can be seen on Fig. \ref{fig:main_loop}. It follows the classic order of evolutionary algorithms, starting with selection to produce offspring, then recombination, mutation, and finally elimination. In addition, local search is applied after mutation for each of the generated offspring with a $p_l$ probability in each generation.
 
-In each generation, for each offspring pair, two parents are selected that will produce the offspring pair using recombination with $90\%$ probability. If recombination fails, then the parents are passed to the next step. This step involves inversion mutation with $10\%$ probaility. If this step fails as well, then the offspring are the same as the parents. After all offspring have been generated for a single generation, a 2-opt local search mechanism attempts to optimize those offspring. Finally, a $(\lambda+\mu)-elimination$ method selects the new population by combining the old population with the new offspring, sorting the combined population and keeping the $top-\lambda$ individuals. Since, we use fitness sharing however, after the new population has been selected, each individual in the new population is re-weighted according to its similarity with other individuals, in order to limit the survivability of multiple similar good candidates. That's also one reason why elimination is done without replacement.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{images/genetic_algorthm_main_loop.png}
+\caption{A high level flowchart of the developed evolutionary algorithm.}
+\label{fig:main_loop}
+\end{figure}
 
-Selection is done with replacement, so that there is increased probability to pick really good individuals multiple times to recombine with other individuals. We basically desire good genes to propagate inside the population.
+Selection is done with replacement, so that there is increased probability to pick really good individuals multiple times to recombine with other individuals. We basically desire good genes to be reused in the next generation.
 
-\subsection{Parameter selection}
+A $(\lambda+\mu)-elimination$ operator selects the new population by combining the old population with the new offspring, sorting the combined population and keeping the $top-\lambda$ individuals. Because of the fitness sharing scheme that is used, the elimination method selects individuals sequentially and not in parallel, with replacement. After each selection the combined population plus offspring are reweighted, so as to avoid several similar solutions from surviving to the next generation.
+
+\subsection{Parameter selection}\label{ss:parameter_selection}
 
 %\ReplaceMe{For all of the parameters that are not automatically determined by adaptivity or self-adaptivity (as you have described above), describe how you determined them. Did you perform a hyperparameter search? How did you do this? How did you determine these parameters would be valid both for small and large problem instances?}
 
-The main parameters that were tuned in the group phase were the population size, offspring size, mutation rate, k of k-tournament selection, as well as mutation rate and recombination rate. Since, good values for those parameters is already known, only minimal effort was done to tune them. Most of the tuning effort was focust on the new hyperparameters that were introduced in the individual phase.
+Because of the addition of local search and fitness sharing, the algorithm grew more computationally expensive. As a result the population size and the offspring size were significantly reduced by two orders of magnitude to allow the algorithm to run for more generations before time runs out. In particular, $\lambda$ was reduced from $2000$ to $10$ and $\mu$ was reduced from around $2000/3$ to $5$. These parameters were tuned to achieve good performance in all problems, big and small.
 
-Because of the addition of local search and fitness sharing, the algorithm grew more computationally expensive. As a result the population size and the offspring size were significantly reduced by an order of magnitude to allow the algorithm to run for more generations before time runs out. In particular, $\lambda$ was reduced from $2000$ to $100$ and $\mu$ was reduced from around $2000/3$ to $20$.
+Furthermore, the reduction of the population and offspring size, meant that local search could be performed to all offspring with $100\%$ probability even for the large $tour929$ problem. Although, to increase the number of generations, the local search method had to be controlled with a timeout of $0.2s$. Without timeout, a single full run of local search for the $Tour929$ would take 4 to 10 seconds and the algorithm would reach a timeout in just a few generations.
 
-One of the biggest bottlenecks of the algorithm is 2-opt local search. As a result it was decided that local search will be applied in a generation with a probability $p_l$. This probability was tuned through  hyperparameter search. In Figure \ref{fig;prob-ls} there is a graph demonstrating the best fitness that the algorithm achieves for various local search probability values ranging from $0.0$ to $1.0$. Furthermore, Figure \ref{fig:prob-ls}, also displays the number of iterations that the algorithm run for, for each $p_l$ value. Based on those graphs we can safely pick $p_l = 0.3$, ensuring both efficiency and finding a good solution. 
+For mutation, the idea of mass mutation from Eiben et al \cite{eiben} was applied. This mass mutation approach refers mostly to memetic algorithms, which find really good locally optimal solutions using local search operators. The goal of mass mutation is to apply mutation with a really high rate and/or strength so that the algorithm can find solutions that escape from local minima. This approach is implemented with a mutation probability $p_m = 1.0$ and mutation strength $\sigma_\mu = 10$.
 
-\begin{figure}[H]
-    \centering
-	\includegraphics[width=\textwidth]{results/tuning/prob_LS.png}
-    \caption{Best Fitness and Number of Iterations for various local search probability values}
-    \label{fig:prob-ls}
-\end{figure}
+The fitness sharing parameters $\alpha$ and $\sigma$ were selected as 1 and $num\_cities / 10$ respectively. The shape parameter $\alpha$ is average regarding the punishment of similar candidates, while the distance $\sigma$ is selected with respect to the size of the problem. It wouldn't be prudent to select the same distance threshold for all problem sizes, since a threshold of $\sigma=5$ might be suitable for smallest $tour29$ problem, but it would result in very homogeneous population for the largest problem $tour929$.
 
-Another parameter that was added in the individual phase is the mutation strength $\sigma_m$, which was also tuned via hyperparameter search. The results are shown in Figure \ref{fig:sigma-mu}. The algorithm achieved the best results for $\sigma_m = 3$, although, it could just be a matter of luck. A more thorough hyperparameter search would repeatedly run the same experiment and then decide the best value based on the mean of the results. 
+All of the aforementioned parameters were tested with regard to whether they allowed for enough generations for each problem and whether they produced good enough solutions. For the rest of the parameters, such as tournament selection size $k$ or recombination probability, typical values were chosen, which can be seen in Subsection \ref{ss:metadata}.
 
-\begin{figure}[H]
-    \centering
-	\includegraphics[width=\textwidth]{results/tuning/sigma_mu.png}
-    \caption{Best Fitness for various mutation strength values}
-    \label{fig:sigma-mu}
-\end{figure}
+%\begin{figure}[H]
+%    \centering
+%	\includegraphics[width=\textwidth]{results/tuning/prob_LS.png}
+%    \caption{Best Fitness and Number of Iterations for various local search probability values. Experiment was run on \textit{tour194}.}
+%    \label{fig:prob-ls}
+%\end{figure}
+
+%Another parameter that was added in the individual phase is the mutation strength $\sigma_m$, which was also tuned via hyperparameter search. The results are shown in Figure \ref{fig:sigma-mu}. The algorithm achieved the best results for $\sigma_m = 3$, although, it could just be a matter of luck. A more thorough hyperparameter search would repeatedly run the same experiment and then decide the best value based on the average of the results.
+
+%\begin{figure}[H]
+%    \centering
+%	\includegraphics[width=\textwidth]{results/tuning/sigma_mu.png}
+%    \caption{Best Fitness for various mutation strength values. Experiment was run on \textit{tour194}}
+%    \label{fig:sigma-mu}
+%\end{figure}
 
 %\subsection{Other considerations}
 
 %\ReplaceMe{Did you consider other items not listed above, such as elitism, multiobjective optimization strategies (e.g., island model, pareto front approximation), a parallel implementation, or other interesting computational optimizations (e.g. using advanced algorithms or data structures)? You can describe them here or add additional subsections as needed.}
 
 
-\section{Numerical experiments}
+\section{Numerical experiments} \label{s:numerical_experiments}
 
 %\RemoveMe{\textbf{Goal:} Based on this section and our execution of your code, we will evaluate the performance (time, quality of solutions) of your implementation and your ability to interpret and explain the results on benchmark problems.}
 
-\subsection{Metadata}
+\subsection{Metadata} \label{ss:metadata}
 
-\ReplaceMe{What parameters are there to choose in your evolutionary algorithm? Which fixed parameter values did you use for all experiments below? If some parameters are determined based on information from the problem instance (e.g., number of cities), also report their specific values for the problems below.
+%\ReplaceMe{What parameters are there to choose in your evolutionary algorithm? Which fixed parameter values did you use for all experiments below? If some parameters are determined based on information from the problem instance (e.g., number of cities), also report their specific values for the problems below.
 
-Report the main characteristics of the computer system on which you ran your evolutionary algorithm. Include the processor or CPU (including the number of cores and clock speed), the amount of main memory, and the version of Python 3.}
+%Report the main characteristics of the computer system on which you ran your evolutionary algorithm. Include the processor or CPU (including the number of cores and clock speed), the amount of main memory, and the version of Python 3.}
 
 The following list presents the different parameters that were chosen for the experiments presented in the following subsections. 
 \begin{itemize}
-\item $\lambda = 100$: size of population
-\item $\mu = 20$: size of offspring
-\item $k = 4$: number of individuals in the k-tournament selection
+\item $\lambda = 10$: size of population
+\item $\mu = 5$: size of offspring
+\item $\lambda_h = 0.2 \times \lambda = 2$: number of heuristic solutions calculated during initialization
+\item $k = 3$: number of individuals in the k-tournament selection
 \item $p_c = 0.9$: recombination probability per generation
-\item $p_m = 0.1$: mutation probability per generation
-\item $p_l = 0.3$: local search probabiility per generation
+\item $p_m = 1.0$: mutation probability per generation
+\item $p_l = 1.0$: local search probabiility per generation
 \item $\sigma_m = 3$: mutation strength
+\item $\alpha_{fs} = 1$: Fitness sharing shape
+\item $\sigma_{fs} = \frac{N}{10}$: Fitness sharing distance threshold, where N is the size of the problem (eg. for $tour29$ $N=29$)
 \end{itemize}
 
 All experiments were run in a laptop with an Intel i7 processor with 4 physical cores, 8 logical cores, 8GB Ram, and a clock speed of 1.3GHz (3.9GHz turbo speed). No parallelization was used, so execution was limited to one core. Finally, all experiments were run with \textit{Python 3.8.5}.
 
-\subsection{tour29.csv}
+\subsection{tour29.csv} \label{ss:tour29}
 
+%\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
 
+%What is the best tour length you found? What is the corresponding sequence of cities? 
 
-\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+%Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?
 
-What is the best tour length you found? What is the corresponding sequence of cities? 
+%Solve this problem 1000 times and record the results. Make a histogram of the final mean fitnessess and the final best fitnesses of the 1000 runs. Comment on this figure: is there a lot of variability in the results, what are the means and the standard deviations?}
 
-Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?
-
-Solve this problem 1000 times and record the results. Make a histogram of the final mean fitnessess and the final best fitnesses of the 1000 runs. Comment on this figure: is there a lot of variability in the results, what are the means and the standard deviations?}
+Fig. \ref{fig:tour29convergence} presents a typical convergence graph of the algorithm run on \textit{tour29}. As we can see, the algorithm finds the optimal solution very quickly, although it takes a while for the algorithm to converge due to the hard limit of 100 generations without improvement. In the graph we can see with the dotted lines, where are the greedy heuristic and optimal solutions to this problem. The best solution of the algorithm starts very close to the greedy heuristic and reaches the optimal in less than 10 iterations. Furthermore, the mean fitness never converges fully to the best fitness because of the fitness sharing scheme that is used, which indicates good preservation of diversity across generations.
 
 \begin{figure}[H]
     \centering
 	\includegraphics[width=0.5\textwidth]{results/4.2/tour29_convergence.png}
-    \caption{Tour29 Convergence Graph}
+    \caption{Tour29 typical convergence graph}
     \label{fig:tour29convergence}
 \end{figure}
+
+The best tour that was found has a fitness - tour length of approximately $\textbf{27154m}$.\\
+The corresponding tour sequence is the following:
+\begin{center}
+\textit{[2, 6, 8, 12, 13, 15, 23, 24, 26, 19, 25, 27, 28, 22, 21, 20, 16, 17, 18, 14, 11, 10, 9, 5, 0, 1, 4, 7, 3]}
+\end{center}
 
 \begin{figure}[H]
      \centering
      \includegraphics[width=\textwidth]{results/4.2/tour29_histogram.png}
-     \caption{Tour29 1000 Run Histograms of Best and Mean Fitness}
+     \caption{Tour29 1000 run histograms of best and mean fitness}
      \label{fig:tour29histogram}
 \end{figure}
 
-\ReplaceMe{TODO add explanation} Figures \ref{fig:tour29convergence},  \ref{fig:tour29histogram}
+Based on Fig. \ref{fig:tour29histogram}, the algorithm seems to perform really well on \textit{tour29}, consistently finding the optimal or a near optimal solution for a $1000$ runs. At the same time, the histogram of the mean fitness illustrates the fact that even at convergence the algorithm manages to preserve some diversity in the population, since mean fitness is always greater than the best fitness. The mean and std of the 1000 runs for the best and the mean fitness are shown in Table \ref{table:1000run_statistics}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ |c|c|c|c| } 
+\hline
+Fitness & 1000-Run Average & 1000-Run Sandard Deviation\\
+\hline
+Best & $27160.06137471839$ & $43.44519234412967$ \\ 
+Mean & $27497.005460551067$ & $92.03286853386737$ \\ 
+\hline
+\end{tabular}
+\caption{Statistics of 1000 runs on \textit{tour29}.}
+\label{table:1000run_statistics}
+\end{table}
 
 
-\subsection{tour100.csv}
+\subsection{tour100.csv} \label{ss:tour100}
 
-\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+%\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+%
+%What is the best tour length you found in each case? 
+%
+%Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
 
-What is the best tour length you found in each case? 
-
-Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
+Fig. \ref{fig:tour100convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour100}. The best solution that was found comes very close to the optimal solution (red dotted line). The algorithm finds the best solution at about the 130th iteration, but it doesn't converge until the timeout since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme performed really well as can be seen from the distance between the mean and best fitness across generations.
 
 \begin{figure}[H]
     \centering
@@ -301,15 +323,23 @@ Interpret your results. How do you rate the performance of your algorithm (time,
     \label{fig:tour100convergence}
 \end{figure}
 
-\ReplaceMe{TODO add explanation} Figure \ref{fig:tour100convergence}
+The best tour that was found has a fitness - tour length of approximately $\textbf{7390m}$.\\
+The corresponding tour sequence is the following:\\
 
-\subsection{tour194.csv}
+\begin{minipage}{\textwidth}
+\centering
+\textit{[81, 92, 52, 60, 63, 24, 97, 98, 48, 40, 44, 78, 33, 90, 85, 70, 27, 22, 77, 96, 69, 29, 1, 17, 34, 95, 76, 23, 68, 71, 25, 16, 55, 80, 20, 47, 35, 18, 59, 49, 5, 56, 57, 19, 73, 39, 32, 74, 38, 13, 8, 86, 4, 51, 54, 41, 12, 89, 61, 43, 58, 67, 42, 83, 66, 0, 50, 65, 15, 79, 64, 93, 14, 6, 88, 72, 94, 84, 36, 46, 91, 28, 10, 37, 45, 7, 62, 53, 11, 87, 30, 9, 3, 31, 82, 21, 75, 99, 26, 2]}
+\end{minipage}
 
-\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+\subsection{tour194.csv} \label{ss:tour194}
 
-What is the best tour length you found? 
+%\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+%
+%What is the best tour length you found? 
+%
+%Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
 
-Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
+Fig. \ref{fig:tour194convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour194}. The best solution that was found lies between the greedy heuristic (yellow dotted line) and the optimal one (red dotted line). It is closer to the optimal one and a clear improvement rate can be observed across iterations. The algorithm finds the best solution at about the 320th iteration, but it doesn't converge until the timeout since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme managed to keep enough diversity which can be observed by the nonzero distance between the best and mean fitnesses.
 
 \begin{figure}[H]
     \centering
@@ -318,18 +348,22 @@ Interpret your results. How do you rate the performance of your algorithm (time,
     \label{fig:tour194convergence}
 \end{figure}
 
-\ReplaceMe{TODO add explanation} Figure \ref{fig:tour194convergence}
+The best tour that was found has a fitness - tour length of approximately $\textbf{9390m}$.\\
+The corresponding tour sequence is the following:
 
+\begin{center}
+\textit{[55, 57, 42, 39, 33, 38, 46, 50, 60, 65, 66, 72, 67, 63, 69, 76, 83, 80, 78, 82, 87, 91, 96, 94, 95, 92, 90, 101, 102, 105, 104, 106, 107, 99, 109, 111, 114, 115, 116, 120, 119, 122, 123, 127, 132, 128, 134, 142, 147, 159, 165, 170, 169, 166, 161, 157, 158, 164, 167, 177, 179, 184, 192, 187, 190, 191, 188, 183, 180, 176, 174, 172, 173, 171, 178, 185, 182, 186, 189, 193, 181, 175, 168, 163, 162, 160, 155, 144, 148, 145, 141, 136, 139, 133, 131, 129, 126, 125, 124, 137, 138, 143, 149, 153, 156, 152, 151, 140, 146, 150, 154, 135, 130, 117, 121, 118, 108, 112, 113, 110, 103, 100, 98, 93, 88, 89, 97, 84, 85, 64, 19, 62, 35, 58, 61, 81, 70, 79, 86, 75, 74, 77, 71, 73, 68, 59, 56, 44, 36, 26, 21, 28, 27, 32, 17, 20, 23, 25, 16, 6, 10, 13, 24, 22, 12, 15, 7, 5, 0, 3, 1, 2, 4, 8, 9, 11, 14, 18, 29, 31, 30, 34, 37, 40, 47, 45, 43, 41, 49, 48, 54, 53, 51, 52]}
+\end{center}
 
-\subsection{tour929.csv}
+\subsection{tour929.csv} \label{ss:tour929}
 
-\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
-
-What is the best tour length you found? 
-
-Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one? 
-
-Did your algorithm converge before the time limit? How many iterations did you perform?}
+%\ReplaceMe{Run your algorithm on this benchmark problem (with the 5 minute time limit from the Reporter). Include a typical convergence graph, by plotting the mean and best objective values in function of the time (for example based on the output of the Reporter class). 
+%
+%What is the best tour length you found? 
+%
+%Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one? 
+%
+%Did your algorithm converge before the time limit? How many iterations did you perform?}
 
 \begin{figure}[H]
     \centering
@@ -338,13 +372,28 @@ Did your algorithm converge before the time limit? How many iterations did you p
     \label{fig:tour929convergence}
 \end{figure}
 
-\section{Critical reflection}
+The best tour that was found has a fitness - tour length of approximately $\textbf{99669m}$.\\
+The corresponding tour sequence is the following:
 
-\RemoveMe{\textbf{Goal:} Based on this section, we will evaluate your understanding and insight into the main strengths and weaknesses of your evolutionary algorithms.}
+\begin{center}
+\textit{[703, 712, 727, 731, 750, 749, 739, 735, 733, 746, 751, 755, 741, 736, 763, 761, 772, 781, 778, 764, 769, 780, 773, 789, 800, 799, 801, 798, 791, 775, 784, 785, 782, 771, 760, 767, 762, 756, 752, 748, 737, 734, 728, 715, 713, 697, 702, 742, 747, 766, 753, 740, 757, 758, 770, 776, 768, 774, 786, 797, 809, 808, 806, 805, 815, 807, 790, 792, 788, 803, 802, 812, 814, 813, 787, 783, 765, 723, 645, 628, 627, 596, 587, 573, 562, 500, 493, 450, 449, 432, 379, 366, 367, 370, 373, 464, 397, 360, 363, 337, 331, 340, 344, 339, 342, 341, 375, 352, 333, 355, 357, 348, 345, 346, 343, 327, 296, 326, 305, 244, 324, 438, 443, 433, 426, 439, 434, 445, 444, 451, 467, 474, 496, 495, 484, 473, 466, 508, 550, 559, 563, 564, 565, 581, 551, 545, 539, 530, 535, 538, 544, 537, 543, 534, 521, 515, 522, 509, 510, 511, 523, 524, 516, 512, 502, 513, 487, 468, 486, 476, 485, 475, 456, 452, 446, 457, 447, 469, 477, 453, 417, 406, 400, 401, 407, 402, 413, 418, 427, 428, 435, 440, 420, 421, 415, 414, 403, 404, 394, 393, 392, 391, 384, 385, 381, 377, 382, 386, 388, 378, 376, 387, 389, 395, 399, 410, 409, 419, 423, 422, 416, 408, 398, 396, 405, 429, 430, 431, 441, 454, 462, 448, 455, 463, 471, 480, 498, 499, 506, 518, 532, 527, 541, 557, 540, 526, 505, 492, 491, 461, 459, 460, 470, 504, 503, 479, 490, 489, 458, 478, 488, 497, 517, 552, 553, 560, 554, 561, 566, 567, 525, 536, 531, 546, 555, 556, 547, 568, 569, 577, 579, 585, 603, 608, 607, 598, 589, 594, 606, 620, 619, 611, 602, 593, 584, 576, 571, 601, 605, 614, 604, 600, 583, 582, 599, 617, 618, 622, 623, 624, 725, 793, 810, 661, 743, 685, 662, 726, 777, 794, 843, 853, 863, 884, 887, 897, 890, 893, 898, 903, 904, 906, 911, 909, 910, 912, 915, 917, 916, 899, 883, 878, 872, 865, 864, 846, 847, 851, 838, 817, 823, 844, 858, 868, 875, 894, 907, 913, 918, 920, 922, 927, 925, 924, 921, 923, 926, 928, 919, 914, 908, 905, 901, 900, 896, 902, 895, 867, 860, 850, 840, 829, 819, 821, 822, 745, 779, 824, 828, 831, 836, 837, 842, 862, 876, 882, 886, 879, 880, 874, 885, 889, 891, 892, 888, 869, 866, 839, 848, 852, 820, 687, 636, 630, 646, 637, 647, 648, 754, 816, 856, 849, 855, 833, 825, 796, 759, 744, 638, 625, 631, 649, 621, 575, 626, 588, 549, 597, 533, 520, 519, 507, 383, 365, 354, 362, 359, 347, 338, 332, 330, 307, 308, 287, 178, 79, 76, 71, 64, 34, 15, 49, 57, 56, 47, 42, 75, 94, 90, 97, 101, 204, 153, 237, 203, 180, 165, 161, 147, 143, 130, 109, 105, 108, 104, 100, 91, 58, 61, 35, 28, 19, 29, 30, 13, 17, 10, 3, 2, 4, 9, 33, 20, 14, 12, 27, 32, 36, 46, 37, 38, 44, 50, 52, 53, 55, 54, 60, 63, 66, 70, 69, 74, 68, 73, 82, 86, 95, 98, 106, 112, 111, 121, 107, 116, 128, 138, 155, 140, 129, 113, 103, 114, 123, 119, 125, 127, 122, 115, 110, 117, 118, 126, 124, 120, 133, 145, 146, 154, 159, 174, 182, 187, 185, 193, 190, 186, 179, 176, 173, 156, 152, 135, 134, 136, 142, 149, 158, 169, 167, 163, 160, 148, 141, 139, 137, 144, 151, 157, 162, 168, 171, 177, 175, 188, 198, 210, 223, 218, 212, 197, 209, 195, 183, 166, 164, 170, 150, 191, 219, 220, 231, 243, 248, 245, 249, 247, 246, 242, 239, 240, 241, 238, 232, 224, 230, 226, 235, 228, 234, 225, 221, 215, 217, 216, 213, 201, 207, 196, 194, 189, 172, 181, 184, 192, 202, 205, 206, 208, 211, 199, 214, 222, 227, 233, 252, 255, 257, 267, 262, 258, 263, 276, 290, 286, 289, 266, 229, 102, 96, 88, 59, 72, 65, 67, 78, 51, 26, 18, 0, 6, 8, 16, 11, 22, 25, 24, 23, 5, 1, 7, 39, 31, 43, 62, 99, 200, 89, 77, 80, 41, 40, 21, 45, 48, 81, 85, 84, 83, 87, 93, 92, 236, 254, 282, 268, 250, 253, 259, 283, 292, 313, 274, 284, 318, 314, 270, 285, 269, 260, 264, 265, 271, 281, 297, 304, 303, 309, 315, 329, 325, 306, 293, 273, 272, 256, 131, 132, 251, 261, 288, 278, 294, 299, 298, 302, 310, 316, 320, 334, 323, 300, 301, 311, 319, 317, 328, 312, 295, 279, 280, 277, 275, 291, 322, 321, 336, 358, 335, 372, 349, 364, 369, 374, 425, 483, 548, 612, 578, 542, 529, 494, 465, 412, 356, 361, 353, 351, 350, 368, 371, 380, 390, 411, 436, 442, 481, 501, 482, 472, 437, 424, 514, 558, 616, 632, 613, 570, 574, 592, 591, 629, 729, 795, 811, 818, 832, 827, 841, 845, 859, 877, 873, 871, 881, 870, 861, 857, 854, 835, 834, 826, 830, 804, 663, 686, 634, 635, 633, 615, 609, 595, 590, 586, 580, 572, 528, 610, 640, 641, 672, 679, 664, 675, 690, 692, 706, 716, 708, 719, 700, 707, 704, 705, 714, 721, 732, 722, 738, 730, 717, 695, 691, 682, 665, 660, 653, 650, 643, 639, 644, 651, 652, 671, 654, 655, 667, 678, 680, 673, 676, 669, 659, 656, 657, 642, 658, 683, 677, 668, 670, 666, 674, 684, 681, 694, 693, 699, 711, 724, 718, 701, 689, 688, 696, 698, 709, 720, 710]}
+\end{center}
 
-\ReplaceMe{Describe the main lessons learned from this project. What do you think are the main strong points of evolutionary algorithms in general? Did you apply these strengths in this project? What are the main weaknesses of evolutionary algorithms and of your implementation in particular? Do you think these can be avoided or mitigated? How? Do you believe evolutionary algorithms are appropriate for this problem? Why (not)? What surprised you and why? What did you learn from this project?}
+\section{Critical reflection} \label{s:critical_reflection}
 
-%\section{Other comments} \label{sec_other}
+%\RemoveMe{\textbf{Goal:} Based on this section, we will evaluate your understanding and insight into the main strengths and weaknesses of your evolutionary algorithms.}
+
+%\ReplaceMe{Describe the main lessons learned from this project. What do you think are the main strong points of evolutionary algorithms in general? Did you apply these strengths in this project? What are the main weaknesses of evolutionary algorithms and of your implementation in particular? Do you think these can be avoided or mitigated? How? Do you believe evolutionary algorithms are appropriate for this problem? Why (not)? What surprised you and why? What did you learn from this project?}
+
+Working on this project allowed me the opportunity me to study evolutionary algorithms and understand them in more depth, while also looking at state-of-the-art research to find clues as to how to refine my evolutionary algorithm for solving the \textit{Travelling Salesman Problem (TSP)}. Evolutionary algorithms in general are really good at solving non-convex optimization problems whose solution space contains many local minima, where a popular optimization algorithm like Steepest Descent would get stuck quite easily in a suboptimal solution. TSP is such a non-convex problem and hence evolutionary algorithms are a good approach to solve it. Of course in most cases it's not guaranteed that an evolutionary algorithm will find the global optimum in finite time, but it certainly has the capability to escape local minima and find really good solutions. This is mainly thanks to the random nature of the mutation and recombination steps. On one hand we have the random combination of the useful information that already exists in the population and on the other hand we have the randomness that's inserted into new individuals, which may produce even better solutions than the previous generations.
+
+A good evolutionary algorithm, in general, needs really careful design and needs to be specialized to a problem and use problem specific information to guide the search towards optimal solutions. For example, it's easy to design an evolutionary algorithm for solving the TSP with a lot of randomness, but to make it really efficient, it is very advantageous to seed the initial population or even other steps of the algorithm with greedy heuristic solutions. This step proved to improve the efficiency of the developed algorithm and speed up the search of good candidate solutions quite considerably. Moreover, an evolutionary algorithm can become even more efficient if it's combined with local search methods like steepest descent or k-opt. Instead of waiting to find local minima after many generations of mutation and recombination it's a lot more efficient to run local search on a lot of individuals from the population and thus find many local minima, thus increasing the probability to find the global minima or a at least a really good solution. The introduction of 2-opt proved instrumental in finding really good solutions without letting the algorithm run for thousands of generations.
+
+Of course, evolutionary algorithms are not the perfect tool for solving any problem in many cases there are way better alternatives. One main disadvantage of evolutionary algorithms is that they are very computationally expensive. The developed evolutionary algorithm, in particular, is quite inefficient because of the really expensive local search operator (2-opt) that prevents the larger problems from running for a high number generations given the 5-minute time limit. This could have potentially been alleviated by parallelizing the local search of multiple offspring at the same time. Another issue with the local search operator and the greedy heuristic initialization was that the algorithm was directed towards strong local minima and couldn't escape easily. However, the benefit of those two methods far outweighed the costs.
+
+What surprised me the most in this project was mainly how modular and customizable an evolutionary algorithm can be. There are so many different methods to choose from, yet not all of them are compatible with all problems and it's quite a complex and time-consuming task to find the right ones to combine. Furthermore, a few methods that I experimented with, such as self-adaptive mutation rate and/or strength failed to provide any measurable improvement to the algorithm, despite them being quite popular in the literature. Another thing that was quite difficult to work out was how to interpret the results. Due to the random nature of evolutionary algorithms, it was difficult for example to evaluate if a modification to the algorithm or the tuning of a parameter made any difference, which resulted in a lot of trial and error to find a good combination of parameters.
+
+%\section{Other comments} \label2{sec_other}
 %
 %\ReplaceMe{In case you think there is something important to discuss that is not covered by the previous sections, you can do it here. }
 
