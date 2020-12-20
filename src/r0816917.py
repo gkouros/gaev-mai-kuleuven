@@ -17,7 +17,7 @@ import Reporter
 
 
 # Modify the class name to match your student number.
-class r0123456:
+class r0816917:
 
     def __init__(self):
         self.reporter = Reporter.Reporter(self.__class__.__name__)
@@ -39,16 +39,16 @@ class r0123456:
             k=3,
             recombination_probability=0.9,
             mutation_probability=1,
-            local_search_probability=0.5,
-            mutation_strength=10,
+            local_search_probability=1,
+            mutation_strength=1,
             fitness_sharing_alpha=1,
             fitness_sharing_sigma=len(distance_matrix)//10)
 
-        print(ev.get_config())
+        #  print(ev.get_config())
 
         while not ev.converged(
                 improvement_criterion=True,
-                imrpovement_threshold=100):
+                improvement_threshold=100):
 
             # Your code here.
 
@@ -70,23 +70,120 @@ class r0123456:
                                              best_solution)
 
             # print state of generation
-            print(ev.state, f' time_left: {time_left}')
+            print(ev.state, f'- time_left: {int(time_left)}')
 
             if time_left < 0:
                 break
 
         # Your code here.
-        if time_left < 0:
-            print('Timed out!')
-        else:
-            print('Converged!')
+        #  if time_left < 0:
+        #      print('Timed out!')
+        #  else:
+        #      print('Converged!')
 
         return 0
+
+###############################################################################
+########################### Representation ####################################
+###############################################################################
+
+
+class Individual:
+    """ Wrapper class for the representation of a candidate solution of TSP """
+
+    def __init__(self, distance_matrix, route=None, sigma=1, gamma=2):
+        """ Initializes a candidate solution
+
+        Args:
+            distance_matrix (np.array): The cost matrix of the cities
+            route (list): The route of the candidate solution (random if None)
+            sigma (int): The mutation strength of an individual
+            gamma (int): The update weight of the mutation strength
+        """
+        self.size = len(distance_matrix)
+        self.distance_matrix = distance_matrix
+        self.route = None
+        self.fitness = None
+        self.edges = None
+        self.sigma = max(1, sigma + gamma * (np.random.random() - 0.5))
+        self.gamma = gamma
+
+        if route is None:
+            self.set_route(np.random.permutation(self.size))
+        else:
+            self.set_route(route)
+
+    def __str__(self) -> str:
+        return f"Route: {self.route}, Total distance: {self.fitness}"
+
+    def __getitem__(self, key: int) -> int:
+        """ Returns the city corresponding to the given key in the route
+
+        Args:
+            key (int): The idx of the city to return from the route
+
+        Returns:
+            int: The city corresponding to the key
+        """
+        if key >= self.size:
+            raise ValueError('Index out of bounds')
+
+        return self.route[key]
+
+    def calc_fitness(self) -> float:
+        """ Calculates the fitness of the individual as the total distance
+
+        Returns:
+            float: The total distance of the route of the individual
+        """
+        dist = 0
+
+        for idx, from_city in enumerate(self.route):
+            to_city = self.route[(idx+1) % self.size]
+            dist += self.distance_matrix[from_city, to_city]
+
+        return dist
+
+    def set_route(self, route: list) -> None:
+        """ Sets the route/chromosome of the individual
+
+            Also updates the fitness and the edges list
+
+            Args:
+                route (list): The sequence of cities
+        """
+        if len(route) != len(set(route)):
+            raise ValueError('Invalid udpate of route of individual')
+
+        self.route = route
+        self.fitness = self.calc_fitness()
+        self.edges = [(route[idx], route[(idx + 1) % self.size])
+                      for idx in range(self.size)]
+
+    def distance_to(self, individual) -> int:
+        """ Calculates the distance between the indiividual and another
+
+        This distance is defined as the number of different edges between the
+        individuals
+
+        Args:
+            individual (Individual): The individual to measure the distance to
+
+        Returns:
+            int: The distance to the given individuals
+        """
+        edges1 = self.edges
+        edges2 = individual.edges
+        intersection = list(set(edges1) & set(edges2))
+        num_edges = len(self.edges)
+
+        return num_edges - len(intersection)
 
 
 ###############################################################################
 ################################# EV Class ####################################
 ###############################################################################
+
 
 class TSPEvolutionaryAlgorithm:
 
@@ -142,15 +239,23 @@ class TSPEvolutionaryAlgorithm:
         self.mean_history = [self.mean_objective]
         self.diversity_history = [self.diversity]
 
+    def mutation(self, individual: Individual):
+        """ Wrapper of mutation operators
 
-    def mutation(self, individual):
-        """ Wrapper of mutation operators """
-        prob = np.random.random()
-        s = sum(self.counts)
-        f = [c / s for c in self.counts]
-        #  print(f)
+        Args:
+            individual (Individual): The individual to mutate
+
+        Returns:
+            Individual: The mutated individual
+        """
+        ''' adaptive selection of mutation operator
+        #  s = sum(self.counts)
+        #  f = [c / s for c in self.counts]
         #  F = [f[0], f[0]+f[1], 1]
-        F = [0, 1, 1]
+        '''
+        F = [0, 1, 1]  # only greedy mutation
+
+        prob = np.random.random()
 
         if prob < F[0]:
             new_individual = inversion_mutation(individual)
@@ -167,8 +272,8 @@ class TSPEvolutionaryAlgorithm:
 
         return new_individual
 
-    def generate_population(self, distance_matrix, heuristic_search=False
-                           ) -> None:
+    def generate_population(
+            self, distance_matrix, heuristic_search=False) -> None:
         """ Generates the initial population 90% random and 10% heuristics
 
         Args:
@@ -208,8 +313,17 @@ class TSPEvolutionaryAlgorithm:
         self.mean_objective = self.calc_mean_objective()
         self.diversity = unique_fitnesses_normed(self.population)
 
-    def find_heuristic_solutions(self, num_heuristics: int, steps: int = -1
-                                 ) -> list:
+    def find_heuristic_solutions(
+            self, num_heuristics: int, steps: int = -1) -> list:
+        """ Finds a number of greedy heuristic solutions
+
+        Args:
+            num_heuristics (int): The number of solutions to find
+            step (int): The number of greedy steps to perform
+
+        Returns:
+            list: The list of greedy heuristic solutions
+        """
         heuristic_solutions = []
         start_cities = np.random.choice(self.num_cities, num_heuristics)
         heuristic_solutions = [self.find_heuristic_solution(city, steps)
@@ -217,7 +331,17 @@ class TSPEvolutionaryAlgorithm:
 
         return heuristic_solutions
 
-    def find_heuristic_solution(self, city: int, steps: int = -1) -> Individual:
+    def find_heuristic_solution(
+            self, city: int, steps: int = -1) -> Individual:
+        """ Finds a greedy heuristic solution starting from a given city
+
+        Args:
+            city (int): The city to start from
+            step (int): The number of greedy steps to perform
+
+        Returns:
+            Individual: A greedy heuristic solution
+        """
         available_cities = list(range(self.num_cities))
         new_route = [city]
         available_cities.remove(city)
@@ -254,27 +378,27 @@ class TSPEvolutionaryAlgorithm:
         return sorted_city_map
 
     def get_config(self) -> None:
+        """ Returns a string with the configuration of the algorithm """
         return 'TSP EA Config\n' + \
-              '-------------\n' + \
-              f'lambda = {self.lambda_}\n' + \
-              f'mu = {self.mu}\n' + \
-              f'k = {self.k}\n' + \
-              f'p_c = {self.recombination_probability}\n' + \
-              f'p_m = {self.mutation_probability}\n' + \
-              f'p_l = {self.local_search_probability}\n' + \
-              f'sigma_mu = {self.mutation_strength}\n' + \
-              f'fs_alpha = {self.fs_alpha}\n' + \
-              f'fs_sigma = {self.fs_sigma}\n' + \
-              '-------------'
+            '-------------\n' + \
+            f'lambda = {self.lambda_}\n' + \
+            f'mu = {self.mu}\n' + \
+            f'k = {self.k}\n' + \
+            f'p_c = {self.recombination_probability}\n' + \
+            f'p_m = {self.mutation_probability}\n' + \
+            f'p_l = {self.local_search_probability}\n' + \
+            f'sigma_mu = {self.mutation_strength}\n' + \
+            f'fs_alpha = {self.fs_alpha}\n' + \
+            f'fs_sigma = {self.fs_sigma}\n' + \
+            '-------------'
 
     @property
     def state(self) -> str:
         """ Returns the state of the optimization """
-        return \
-                f'#{self.iteration} ' + \
-                f'Best Objective: {self.best_objective} - ' + \
-                f'Mean Objective: {self.mean_objective} - ' + \
-                f'Diversity: {self.diversity}'
+        return f'#{self.iteration} ' + \
+            f'Best Objective: {self.best_objective} - ' + \
+            f'Mean Objective: {self.mean_objective} - ' + \
+            f'Diversity: {self.diversity}'
 
     def converged(self,
                   improvement_criterion: bool = False,
@@ -292,7 +416,7 @@ class TSPEvolutionaryAlgorithm:
             converged = True
             print('Mean objective reached best objective')
         elif improvement_criterion:
-            if  self.iteration > improvement_threshold:
+            if self.iteration > improvement_threshold:
                 if np.std(self.best_history[-improvement_threshold:]) < 1e-7:
                     converged = True
         else:
@@ -301,6 +425,7 @@ class TSPEvolutionaryAlgorithm:
         return converged
 
     def calc_diversity(self) -> dict:
+        """ Calculates the diversity of the population """
         return unique_fitnesses_normed(self.population)
 
     def calc_mean_objective(self) -> float:
@@ -380,101 +505,6 @@ class TSPEvolutionaryAlgorithm:
         #  sigmas = [ind.sigma for ind in self.population]
         #  print(min(sigmas), max(sigmas), np.std(sigmas))
 
-
-###############################################################################
-########################### Representation ####################################
-###############################################################################
-
-class Individual:
-    """ Wrapper class for the representation of a candidate solution of TSP """
-
-    def __init__(self, distance_matrix, route=None, sigma=1, gamma=2):
-        """ Initializes a candidate solution
-
-        Args:
-            distance_matrix (np.array): The cost matrix of the cities
-            route (list): The route of the candidate solution (random if None)
-            sigma (int): The mutation strength of an individual
-            gamma (int): The update weight of the mutation strength
-        """
-        self.size = len(distance_matrix)
-        self.distance_matrix = distance_matrix
-        self.route = None
-        self.fitness = None
-        self.edges = None
-        self.sigma = sigma + gamma * (np.random.random() - 0.5)
-        self.gamma = gamma
-
-        if route is None:
-            self.set_route(np.random.permutation(self.size))
-        else:
-            self.set_route(route)
-
-    def __str__(self) -> str:
-        return f"Route: {self.route}, Total distance: {self.fitness}"
-
-    def __getitem__(self, key: int) -> int:
-        """ Returns the city corresponding to the given key in the route
-
-        Args:
-            key (int): The idx of the city to return from the route
-
-        Returns:
-            int: The city corresponding to the key
-        """
-        if key >= self.size:
-            raise ValueError('Index out of bounds')
-
-        return self.route[key]
-
-    def calc_fitness(self) -> float:
-        """ Calculates the fitness of the individual as the total distance
-
-        Returns:
-            float: The total distance of the route of the individual
-        """
-        dist = 0
-
-        for idx, from_city in enumerate(self.route):
-            to_city = self.route[(idx+1) % self.size]
-            dist += self.distance_matrix[from_city, to_city]
-
-        return dist
-
-    def set_route(self, route: list) -> None:
-        """ Sets the route/chromosome of the individual
-
-            Also updates the fitness and the edges list
-
-            Args:
-                route (list): The sequence of cities
-        """
-        if len(route) != len(set(route)):
-            raise ValueError('Invalid udpate of route of individual')
-
-        self.route = route
-        self.fitness = self.calc_fitness()
-        self.edges = [(route[idx], route[(idx + 1) % self.size])
-                      for idx in range(self.size)]
-
-    def distance_to(self, individual) -> int:
-        """ Calculates the distance between the indiividual and another
-
-        This distance is defined as the number of different edges between the
-        individuals
-
-        Args:
-            individual (Individual): The individual to measure the distance to
-
-        Returns:
-            int: The distance to the given individuals
-        """
-        edges1 = self.edges
-        edges2 = individual.edges
-        intersection = list(set(edges1) & set(edges2))
-        num_edges = len(self.edges)
-
-        return num_edges - len(intersection)
 
 ###############################################################################
 ############################### Operators #####################################
@@ -588,10 +618,6 @@ def swap_mutation(individual: Individual) -> Individual:
                                     sigma, gamma)
 
     return mutated_individual
-    #  if mutated_individual.fitness > individual.fitness:
-    #      return mutated_individual
-    #  else:
-    #      return individual
 
 
 def inversion_mutation(individual: Individual) -> Individual:
@@ -621,10 +647,7 @@ def inversion_mutation(individual: Individual) -> Individual:
                                     sigma, gamma)
 
     return mutated_individual
-    #  if mutated_individual.fitness > individual.fitness:
-    #      return mutated_individual
-    #  else:
-    #      return individual
+
 
 def greedy_mutation(individual: Individual) -> Individual:
     """ Mutation operator that greedily connects four segments of a route
@@ -635,8 +658,6 @@ def greedy_mutation(individual: Individual) -> Individual:
     Returns:
         Individual: The mutated individual
     """
-    sigma = individual.sigma
-    gamma = individual.gamma
     num_cities = len(individual.distance_matrix)
     route = individual.route
     k = 4  # np.random.choice(range(4, 8))
@@ -663,7 +684,8 @@ def greedy_mutation(individual: Individual) -> Individual:
             best_route = new_route
 
     mutated_individual = Individual(individual.distance_matrix, best_route,
-                                    sigma, gamma)
+                                    individual.sigma, individual.gamma)
+
     return mutated_individual
 
 
@@ -699,17 +721,13 @@ def fitness_sharing_elimination(
 
 
 def lambda_plus_mu_elimination(
-        offspring: list, population: list, lambda_: int,
-        alpha: float = 1, sigma: int = 1) -> list:
+        offspring: list, population: list, lambda_: int):
     """ Performs the (λ+μ)-elimination step of the evolutionary algorithm
 
     Args:
         offspring (list): List of the offspring
         population (list): List of the individuals in a population
         lambda_ (int): Number of top lambda_ candidates that will be retained
-        fitness_sharing (bool): Determines if the fitness_sharing is used
-        alpha (float): The fitness sharing shape parameter
-        sigma (int): The fitness sharing distance threshold
 
     Returns:
         new_combined: Top lambda_ candidates that are retained
@@ -723,12 +741,6 @@ def lambda_plus_mu_elimination(
 
     # pick top lambda candidates
     combined = combined[:lambda_]
-
-    # update fitness based on fitness sharing scheme
-    if fitness_sharing:
-        for idx in range(1, len(combined)):
-            combined[idx].calc_shared_fitness(
-                combined[:idx] + combined[idx+1:], alpha=alpha, sigma=sigma)
 
     return combined
 
@@ -784,9 +796,9 @@ def two_opt(route: list, distance_matrix: np.array, timeout: float = 0.2):
     """
     best = deepcopy(route)
     improved = True
-    ts = time.time()
+    start_time = time.time()
 
-    while improved and time.time() - ts < timeout:
+    while improved and time.time() - start_time < timeout:
 
         improved = False
         for i in range(1, len(route) - 2):
@@ -816,7 +828,7 @@ def cost_change(distance_matrix: np.array, n1: int, n2: int, n3: int, n4: int):
         Int: The calcluated cost change
     """
     return distance_matrix[n1][n3] + distance_matrix[n2][n4] - \
-            distance_matrix[n1][n2] - distance_matrix[n3][n4]
+        distance_matrix[n1][n2] - distance_matrix[n3][n4]
 
 
 ############################## Utilities ######################################
@@ -848,6 +860,7 @@ def calc_shared_fitnesses(population: list, survivors: list,
                                 np.inf, shared_fitnesses)
 
     return shared_fitnesses
+
 
 def calc_fitness(route: list, distance_matrix: np.array) -> float:
     """ Calculates the fitness of the individual as the total distance
