@@ -36,13 +36,13 @@ class r0816917:
             distance_matrix,
             lambda_=10,
             mu=5,
-            k=3,
+            k=4,
             recombination_probability=0.9,
-            mutation_probability=1,
+            mutation_probability=0.9,
             local_search_probability=1,
             mutation_strength=1,
             fitness_sharing_alpha=1,
-            fitness_sharing_sigma=len(distance_matrix)//10)
+            fitness_sharing_sigma=len(distance_matrix)//5)
 
         #  print(ev.get_config())
 
@@ -661,27 +661,30 @@ def greedy_mutation(individual: Individual) -> Individual:
     num_cities = len(individual.distance_matrix)
     route = individual.route
     k = 4  # np.random.choice(range(4, 8))
-    nodes = sorted(np.random.choice(num_cities, k))
 
-    segments = []
-    start = 0
-    for idx in range(k):
-        segments += [route[start:nodes[idx]+1]]
-        start = nodes[idx]+1
+    for _ in range(int(individual.sigma)):
+        nodes = sorted(np.random.choice(num_cities, k))
+        segments = []
+        start = 0
 
-    segments += [route[start:]]
+        for idx in range(k):
+            segments += [route[start:nodes[idx]+1]]
+            start = nodes[idx]+1
 
-    best_route = route
-    best_fitness = individual.fitness
-    perms = permutations(segments)
+        segments += [route[start:]]
 
-    for perm in perms:
-        new_route = list(chain.from_iterable(perm))
-        new_fitness = calc_fitness(new_route, individual.distance_matrix)
+        best_route = route
+        best_fitness = individual.fitness
+        perms = permutations(segments)
 
-        if new_fitness < best_fitness:
-            best_fitness = new_fitness
-            best_route = new_route
+        for perm in perms:
+            new_route = list(chain.from_iterable(perm))
+            new_fitness = calc_fitness(new_route, individual.distance_matrix)
+
+            if new_fitness < best_fitness:
+                best_fitness = new_fitness
+                best_route = new_route
+                route = new_route
 
     mutated_individual = Individual(individual.distance_matrix, best_route,
                                     individual.sigma, individual.gamma)
