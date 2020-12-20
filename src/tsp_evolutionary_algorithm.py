@@ -72,11 +72,12 @@ class TSPEvolutionaryAlgorithm:
 
     def mutation(self, individual):
         prob = random.random()
-        s = sum(self.counts)
-        f = [c / s for c in self.counts]
-        #  print(f)
+        #  s = sum(self.counts)
+        #  f = [c / s for c in self.counts]
         #  F = [f[0], f[0]+f[1], 1]
         F = [0, 1, 1]
+        #  F = [1, 1, 1]
+        #  F = [0.33, 0.66, 1]
 
         if prob < F[0]:
             new_individual = inversion_mutation(individual)
