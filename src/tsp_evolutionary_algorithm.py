@@ -258,7 +258,7 @@ class TSPEvolutionaryAlgorithm:
         prob_l = np.random.rand()  # probability of local search
 
         all_offspring = []
-        for _ in range(self.mu//2):
+        for _ in range(int(np.ceil(self.mu / 2))):
             # selection
             parents = [self.selection(self.population, k=self.k)
                        for _ in range(2)]
@@ -273,7 +273,9 @@ class TSPEvolutionaryAlgorithm:
             if prob_m < self.mutation_probability:
                 offspring = [self.mutation(o) for o in offspring]
 
-            all_offspring += offspring
+            for o in offspring:
+                if len(all_offspring) < self.mu:
+                    all_offspring += [o]
 
         # perform local search
         if prob_l < self.local_search_probability:

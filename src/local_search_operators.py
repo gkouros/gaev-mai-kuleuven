@@ -1,28 +1,32 @@
 import time
 import random
+import numpy as np
+import random
 
 
-def two_opt(route, distance_matrix, timeout=0.2):
+def two_opt(route, distance_matrix, timeout=1):
     best = route
     improved = True
     ts = time.time()
+    size = len(distance_matrix)
 
     while improved and time.time() - ts < timeout:
 
         improved = False
         for i in range(1, len(route) - 2):
-            for j in range(i + 1, len(route)):
+            j_list = list(range(i + 1, len(route)))
+            random.shuffle(j_list)
+            for j in j_list:
                 if j - i == 1:
                     continue
 
                 if cost_change(distance_matrix,
-                               best[i - 1], best[i], best[j - 1], best[j]) <= 0:
+                               best[i - 1], best[i],
+                               best[j - 1], best[j]) <= 0:
                     best[i:j] = best[j - 1:i - 1:-1]
                     improved = True
 
-        route = best
     #  print(time.time() - ts)
-
     return best
 
 def cost_change(distance_matrix, n1, n2, n3, n4):

@@ -59,7 +59,7 @@ class TSPDemo:
                                              best_solution)
 
             # print state of generation
-            print(ga.state, f'- time lieft={int(time_left)}')
+            print(ga.state, f'- time left={int(time_left)}')
 
             if time_left < 0:
                 break
