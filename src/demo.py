@@ -26,12 +26,12 @@ class TSPDemo:
 
         # Initialize a genetic algorithm instance using the given TSP problem
         ga = TSPEvolutionaryAlgorithm(distance_matrix, lambda_=10, mu=5, k=3,
-                                      recombination_probability=1,
-                                      mutation_probability=1,
-                                      local_search_probability=0.5,
-                                      mutation_strength=10,
+                                      recombination_probability=0.9,
+                                      mutation_probability=0.9,
+                                      local_search_probability=1,
+                                      mutation_strength=1,
                                       fitness_sharing_alpha=1,
-                                      fitness_sharing_sigma=len(distance_matrix)//10)
+                                      fitness_sharing_sigma=len(distance_matrix)//5)
         print(ga.get_config())
         print(ga.state)
 
@@ -79,5 +79,5 @@ if __name__ == '__main__':
     demo = TSPDemo()
     #  demo.optimize('datasets/tour29.csv')
     #  demo.optimize('datasets/tour100.csv')
-    demo.optimize('datasets/tour194.csv')
-    #  demo.optimize('datasets/tour929.csv')
+    #  demo.optimize('datasets/tour194.csv')
+    demo.optimize('datasets/tour929.csv')
