@@ -15,8 +15,10 @@
 %\usepackage{pythonhighlight}
 \usepackage{cleveref}
 \usepackage{graphicx}
-\usepackage{subfigure}
+%\usepackage{subfigure}
 \usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
 
 
 \newcommand{\nextyear}{\advance\year by 1 \the\year\advance\year by -1}
@@ -200,22 +202,41 @@ A $(\lambda+\mu)-elimination$ operator selects the new population by combining t
 
 %\ReplaceMe{For all of the parameters that are not automatically determined by adaptivity or self-adaptivity (as you have described above), describe how you determined them. Did you perform a hyperparameter search? How did you do this? How did you determine these parameters would be valid both for small and large problem instances?}
 
-Because of the addition of local search and fitness sharing, the algorithm grew more computationally expensive. As a result the population size and the offspring size were significantly reduced by two orders of magnitude to allow the algorithm to run for more generations before time runs out. In particular, $\lambda$ was reduced from $2000$ to $10$ and $\mu$ was reduced from around $2000/3$ to $5$. These parameters were tuned to achieve good performance in all problems, big and small.
+Because of the addition of local search and fitness sharing, the algorithm grew more computationally expensive. As a result the population size and the offspring size were significantly reduced by two orders of magnitude to allow the algorithm to run for more generations before time runs out. In particular, $\lambda$ was reduced from $2000$ to $10$ and $\mu$ was reduced from around $2000/3$ to $5$. These parameters were tuned to achieve good performance in all problems, big and small. Fig. \ref{fig:lambda_search} presents the performance of the algorithm on $tour194$ for $\lambda$ values between $10$ and $100$ and $\mu$ values defined as $\lambda/2$.
 
-Furthermore, the reduction of the population and offspring size, meant that local search could be performed to all offspring with $100\%$ probability even for the large $tour929$ problem. Although, to increase the number of generations, the local search method had to be controlled with a timeout of $0.2s$. Without timeout, a single full run of local search for the $Tour929$ would take 4 to 10 seconds and the algorithm would reach a timeout in just a few generations.
+Furthermore, the reduction of the population and offspring size, meant that local search could be performed to all offspring with $100\%$ probability even for the large $tour929$ problem. Although, to increase the number of generations, the local search method had to be constrained with a timeout of $0.2s$. Without timeout, a single full run of local search for the $tour929$ would take 4 to 10 seconds and the algorithm would reach a timeout in just 2-3 generations.
 
-For mutation, the idea of mass mutation from Eiben et al \cite{eiben} was applied. This mass mutation approach refers mostly to memetic algorithms, which find really good locally optimal solutions using local search operators. The goal of mass mutation is to apply mutation with a really high rate and/or strength so that the algorithm can find solutions that escape from local minima. This approach is implemented with a mutation probability $p_m = 1.0$ and mutation strength $\sigma_\mu = 10$.
+For mutation, the idea of mass mutation from Eiben et al \cite{eiben} was applied. This mass mutation approach refers mostly to memetic algorithms, which find really good locally optimal solutions using local search operators. The goal of mass mutation is to apply mutation with a really high rate so that the algorithm can find solutions that escape from local minima. This approach is implemented with a mutation probability $p_m = 0.9$. Fig. \ref{fig:pm_search} presents the best fitness for various mutation rates from 0.1 to 1.0 on $tour194$.
 
-The fitness sharing parameters $\alpha$ and $\sigma$ were selected as 1 and $num\_cities / 10$ respectively. The shape parameter $\alpha$ is average regarding the punishment of similar candidates, while the distance $\sigma$ is selected with respect to the size of the problem. It wouldn't be prudent to select the same distance threshold for all problem sizes, since a threshold of $\sigma=5$ might be suitable for smallest $tour29$ problem, but it would result in very homogeneous population for the largest problem $tour929$.
+The number $k$ of participants in the tournament selection was chosen via hyperparameters search. The results are shown in Fig. \ref{fig:k_search}, where a $k=4$ was chosen due to its nice balance between performance and computational load.
 
-All of the aforementioned parameters were tested with regard to whether they allowed for enough generations for each problem and whether they produced good enough solutions. For the rest of the parameters, such as tournament selection size $k$ or recombination probability, typical values were chosen, which can be seen in Subsection \ref{ss:metadata}.
+The fitness sharing parameters $\alpha$ and $\sigma$ were selected as 1 and $num\_cities / 5$ ($38$ for $tour194$) respectively, balancing performance and diversity. The shape parameter $\alpha$ is average with regard to punishment of similar candidates, while the distance $\sigma$ is selected with respect to the size of the problem. It wouldn't be prudent to select the same distance threshold for all problem sizes, since a threshold of $\sigma=5$ might be suitable for the smallest $tour29$ problem, but it would result in a very homogeneous population for the largest problem $tour929$. Fig. \ref{fig:sigma_search} presents the best fitness for various $\sigma$ values in range of one tenth of the number of cities $N$ to $N$ on $tour194$.
 
-%\begin{figure}[H]
-%    \centering
-%	\includegraphics[width=\textwidth]{results/tuning/prob_LS.png}
-%    \caption{Best Fitness and Number of Iterations for various local search probability values. Experiment was run on \textit{tour194}.}
-%    \label{fig:prob-ls}
-%\end{figure}
+All of the aforementioned parameters were tested with regard to whether they allowed the algorithm to run for enough generations on each problem and whether they produced good enough solutions. The full list of selected hyperparameters can be seen in Subsection \ref{ss:metadata}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{results/tuning/lambda_hyperparameter_search.png}
+\caption{Hyperparameter search of $\lambda$}\label{fig:lambda_search}
+\end{figure}%
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{results/tuning/mutation_rate_hyperparameter_search.png}
+\caption{Hyperparameter search of mutation rate $p_m$}
+\label{fig:pm_search}
+\end{figure}%
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{results/tuning/k_hyperparamter_search.png}
+\caption{Hyperparameter search of $k$ in $k$-tournament selection}
+\label{fig:k_search}
+\end{figure}%
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{results/tuning/fs_sigma_hyperparamter_search.png}
+\caption{Hyperparameter search of fitness sharing $\sigma$ for $\sigma=num\_cities/d$, where $d \epsilon \{1,2,3,4,5,6,7,8,9,10\}$}
+\label{fig:sigma_search}
+\end{figure}%
 
 %Another parameter that was added in the individual phase is the mutation strength $\sigma_m$, which was also tuned via hyperparameter search. The results are shown in Figure \ref{fig:sigma-mu}. The algorithm achieved the best results for $\sigma_m = 3$, although, it could just be a matter of luck. A more thorough hyperparameter search would repeatedly run the same experiment and then decide the best value based on the average of the results.
 
@@ -246,13 +267,13 @@ The following list presents the different parameters that were chosen for the ex
 \item $\lambda = 10$: size of population
 \item $\mu = 5$: size of offspring
 \item $\lambda_h = 0.2 \times \lambda = 2$: number of heuristic solutions calculated during initialization
-\item $k = 3$: number of individuals in the k-tournament selection
+\item $k = 4$: number of individuals in the k-tournament selection
 \item $p_c = 0.9$: recombination probability per generation
-\item $p_m = 1.0$: mutation probability per generation
+\item $p_m = 0.9$: mutation probability per generation
 \item $p_l = 1.0$: local search probabiility per generation
-\item $\sigma_m = 3$: mutation strength
+\item $\sigma_m = 1$: mutation strength
 \item $\alpha_{fs} = 1$: Fitness sharing shape
-\item $\sigma_{fs} = \frac{N}{10}$: Fitness sharing distance threshold, where N is the size of the problem (eg. for $tour29$ $N=29$)
+\item $\sigma_{fs} = \frac{N}{5}$: Fitness sharing distance threshold, where N is the size of the problem (eg. for $tour29$ $N=29$)
 \end{itemize}
 
 All experiments were run in a laptop with an Intel i7 processor with 4 physical cores, 8 logical cores, 8GB Ram, and a clock speed of 1.3GHz (3.9GHz turbo speed). No parallelization was used, so execution was limited to one core. Finally, all experiments were run with \textit{Python 3.8.5}.
@@ -267,13 +288,34 @@ All experiments were run in a laptop with an Intel i7 processor with 4 physical 
 
 %Solve this problem 1000 times and record the results. Make a histogram of the final mean fitnessess and the final best fitnesses of the 1000 runs. Comment on this figure: is there a lot of variability in the results, what are the means and the standard deviations?}
 
-Fig. \ref{fig:tour29convergence} presents a typical convergence graph of the algorithm run on \textit{tour29}. As we can see, the algorithm finds the optimal solution very quickly, although it takes a while for the algorithm to converge due to the hard limit of 100 generations without improvement. In the graph we can see with the dotted lines, where are the greedy heuristic and optimal solutions to this problem. The best solution of the algorithm starts very close to the greedy heuristic and reaches the optimal in less than 10 iterations. Furthermore, the mean fitness never converges fully to the best fitness because of the fitness sharing scheme that is used, which indicates good preservation of diversity across generations.
+Fig. \ref{fig:tour29convergence} presents a typical convergence graph of the algorithm run on \textit{tour29}. As we can see, the algorithm finds the optimal solution very quickly before the 10th generation, although it takes a while for the algorithm to converge due to the hard limit of 100 generations without improvement. In the graph we can see with the dotted lines, where are the greedy heuristic and optimal solutions to this problem. The best solution of the algorithm starts very close to the greedy heuristic and reaches the optimal in less than 10 iterations. Furthermore, the mean fitness never converges fully to the best fitness because of the fitness sharing scheme that is used, which indicates good preservation of diversity across generations.
 
-\begin{figure}[H]
+\begin{figure}
+\begin{subfigure}[t]{0.5\textwidth}
     \centering
-	\includegraphics[width=0.5\textwidth]{results/4.2/tour29_convergence.png}
-    \caption{Tour29 typical convergence graph}
+	\includegraphics[width=\textwidth]{results/4.2/tour29_convergence.png}
+    \caption{Tour29}
     \label{fig:tour29convergence}
+\end{subfigure}
+\begin{subfigure}[t]{0.5\textwidth}
+    \centering
+	\includegraphics[width=\textwidth]{results/4.3/tour100_convergence.png}
+    \caption{Tour100}
+    \label{fig:tour100convergence}
+\end{subfigure}\\
+\begin{subfigure}[t]{0.5\textwidth}
+    \centering
+	\includegraphics[width=\textwidth]{results/4.4/tour194_convergence.png}
+    \caption{Tour194}
+    \label{fig:tour194convergence}
+\end{subfigure}
+\begin{subfigure}[t]{0.5\textwidth}
+    \centering
+	\includegraphics[width=\textwidth]{results/4.5/tour929_convergence.png}
+    \caption{Tour929}
+    \label{fig:tour929convergence}
+\end{subfigure}
+\caption{Typical convergence graphs on the various datasets.}
 \end{figure}
 
 The best tour that was found has a fitness - tour length of approximately $\textbf{27154m}$.\\
@@ -314,14 +356,7 @@ Mean & $27497.005460551067$ & $92.03286853386737$ \\
 %
 %Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
 
-Fig. \ref{fig:tour100convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour100}. The best solution that was found comes very close to the optimal solution (red dotted line). The algorithm finds the best solution at about the 130th iteration, but it doesn't converge until the timeout since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme performed really well as can be seen from the distance between the mean and best fitness across generations.
-
-\begin{figure}[H]
-    \centering
-	\includegraphics[width=0.5\textwidth]{results/4.3/tour100_convergence.png}
-    \caption{Tour100 Convergence Graph}
-    \label{fig:tour100convergence}
-\end{figure}
+Fig. \ref{fig:tour100convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour100}. The best solution that was found comes very close to the optimal solution (red dotted line). The algorithm finds the best solution at about the 130th iteration, but it doesn't converge until the timeout at around the 240th generation, since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme performed really well as can be seen from the distance between the mean and best fitness across generations.
 
 The best tour that was found has a fitness - tour length of approximately $\textbf{7390m}$.\\
 The corresponding tour sequence is the following:\\
@@ -339,14 +374,7 @@ The corresponding tour sequence is the following:\\
 %
 %Interpret your results. How do you rate the performance of your algorithm (time, memory, speed of convergence, diversity of population, quality of the best solution, etc)? Is your solution close to the optimal one?}
 
-Fig. \ref{fig:tour194convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour194}. The best solution that was found lies between the greedy heuristic (yellow dotted line) and the optimal one (red dotted line). It is closer to the optimal one and a clear improvement rate can be observed across iterations. The algorithm finds the best solution at about the 320th iteration, but it doesn't converge until the timeout since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme managed to keep enough diversity which can be observed by the nonzero distance between the best and mean fitnesses.
-
-\begin{figure}[H]
-    \centering
-	\includegraphics[width=0.5\textwidth]{results/4.4/tour194_convergence.png}
-    \caption{Tour194 Convergence Graph}
-    \label{fig:tour194convergence}
-\end{figure}
+Fig. \ref{fig:tour194convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour194}. The best solution that was found lies between the greedy heuristic (yellow dotted line) and the optimal one (red dotted line). It is closer to the optimal one and a clear improvement rate can be observed across iterations. The algorithm finds the best solution at about the 320th iteration, but it doesn't converge until the timeout at around the 570th generation, since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme managed to keep enough diversity which can be observed by the nonzero distance between the best and mean fitnesses.
 
 The best tour that was found has a fitness - tour length of approximately $\textbf{9390m}$.\\
 The corresponding tour sequence is the following:
@@ -365,12 +393,8 @@ The corresponding tour sequence is the following:
 %
 %Did your algorithm converge before the time limit? How many iterations did you perform?}
 
-\begin{figure}[H]
-    \centering
-	\includegraphics[width=0.5\textwidth]{results/4.5/tour929_convergence.png}
-    \caption{Tour929 Convergence Graph}
-    \label{fig:tour929convergence}
-\end{figure}
+Fig. \ref{fig:tour929convergence} presents the fitness and mean fitness of a run of the algorithm on \textit{tour929}. The best solution that was found lies between the greedy heuristic (yellow dotted line) and the optimal one (red dotted line). It is closer to the optimal one and a clear improvement rate can be observed across iterations. The algorithm finds the best solution at about the 56th iteration, but it doesn't converge until the timeout at the 70th generation since there haven't been over 100 iterations without improvement. Furthermore, the diversity promotion scheme managed to keep enough diversity which can be observed by the nonzero distance between the best and mean fitnesses.
+
 
 The best tour that was found has a fitness - tour length of approximately $\textbf{99669m}$.\\
 The corresponding tour sequence is the following:
@@ -385,13 +409,13 @@ The corresponding tour sequence is the following:
 
 %\ReplaceMe{Describe the main lessons learned from this project. What do you think are the main strong points of evolutionary algorithms in general? Did you apply these strengths in this project? What are the main weaknesses of evolutionary algorithms and of your implementation in particular? Do you think these can be avoided or mitigated? How? Do you believe evolutionary algorithms are appropriate for this problem? Why (not)? What surprised you and why? What did you learn from this project?}
 
-Working on this project allowed me the opportunity me to study evolutionary algorithms and understand them in more depth, while also looking at state-of-the-art research to find clues as to how to refine my evolutionary algorithm for solving the \textit{Travelling Salesman Problem (TSP)}. Evolutionary algorithms in general are really good at solving non-convex optimization problems whose solution space contains many local minima, where a popular optimization algorithm like Steepest Descent would get stuck quite easily in a suboptimal solution. TSP is such a non-convex problem and hence evolutionary algorithms are a good approach to solve it. Of course in most cases it's not guaranteed that an evolutionary algorithm will find the global optimum in finite time, but it certainly has the capability to escape local minima and find really good solutions. This is mainly thanks to the random nature of the mutation and recombination steps. On one hand we have the random combination of the useful information that already exists in the population and on the other hand we have the randomness that's inserted into new individuals, which may produce even better solutions than the previous generations.
+Working on this project allowed me the opportunity me to study evolutionary algorithms and understand them in more depth, while also looking at state-of-the-art research to find clues as to how to refine my algorithm for solving the \textit{Travelling Salesman Problem (TSP)}. Evolutionary algorithms in general are really good at solving non-convex optimization problems whose solution space contains many local minima, where a popular optimization algorithm like Steepest Descent would get stuck quite easily in a suboptimal solution. TSP is such a non-convex problem and hence evolutionary algorithms are a good approach to solve it. Of course in most cases it's not guaranteed that an evolutionary algorithm will find the global optimum in finite time, but it certainly has the capability to escape local minima and find really good solutions. This is mainly thanks to the random nature of the mutation and recombination steps. On one hand we have the random combination of the useful information that already exists in the population and on the other hand we have the randomness that's inserted into new individuals, which may produce even better solutions than the previous generations.
 
-A good evolutionary algorithm, in general, needs really careful design and needs to be specialized to a problem and use problem specific information to guide the search towards optimal solutions. For example, it's easy to design an evolutionary algorithm for solving the TSP with a lot of randomness, but to make it really efficient, it is very advantageous to seed the initial population or even other steps of the algorithm with greedy heuristic solutions. This step proved to improve the efficiency of the developed algorithm and speed up the search of good candidate solutions quite considerably. Moreover, an evolutionary algorithm can become even more efficient if it's combined with local search methods like steepest descent or k-opt. Instead of waiting to find local minima after many generations of mutation and recombination it's a lot more efficient to run local search on a lot of individuals from the population and thus find many local minima, thus increasing the probability to find the global minima or a at least a really good solution. The introduction of 2-opt proved instrumental in finding really good solutions without letting the algorithm run for thousands of generations.
+A good evolutionary algorithm, in general, needs really careful design and needs to be specialized to a problem and use problem specific information to guide the search towards optimal solutions. For example, it's easy to design an evolutionary algorithm for solving the TSP with a lot of randomness, but to make it really efficient, it is very advantageous to seed the initial population or even other steps of the algorithm with heuristic information. This step proved to improve the efficiency of the developed algorithm and speed up the search of good candidate solutions quite considerably. Moreover, an evolutionary algorithm can become even more efficient if it's combined with local search methods like steepest descent or k-opt. Instead of waiting to find local minima after many generations of mutation and recombination it's a lot more efficient to run local search on a lot of individuals from the population and thus find many local minima, thus increasing the probability to find the global minima or at least a really good solution. The introduction of 2-opt proved instrumental in finding really good solutions without letting the algorithm run for thousands of generations.
 
-Of course, evolutionary algorithms are not the perfect tool for solving any problem in many cases there are way better alternatives. One main disadvantage of evolutionary algorithms is that they are very computationally expensive. The developed evolutionary algorithm, in particular, is quite inefficient because of the really expensive local search operator (2-opt) that prevents the larger problems from running for a high number generations given the 5-minute time limit. This could have potentially been alleviated by parallelizing the local search of multiple offspring at the same time. Another issue with the local search operator and the greedy heuristic initialization was that the algorithm was directed towards strong local minima and couldn't escape easily. However, the benefit of those two methods far outweighed the costs.
+Of course, evolutionary algorithms are not the perfect tool for solving any problem in many cases there are way better alternatives. One main disadvantage of evolutionary algorithms is that they are very computationally expensive. The developed evolutionary algorithm, in particular, is quite inefficient because of the really expensive local search operator (2-opt) that prevents the larger problems from running for a high number generations given the 5-minute time limit. This could have potentially been alleviated by parallelizing the local search on multiple offspring at the same time. Another issue with the local search operator and the greedy heuristic initialization was that the algorithm was directed towards strong local minima and couldn't escape easily. However, the benefit of those two methods far outweighed the costs.
 
-What surprised me the most in this project was mainly how modular and customizable an evolutionary algorithm can be. There are so many different methods to choose from, yet not all of them are compatible with all problems and it's quite a complex and time-consuming task to find the right ones to combine. Furthermore, a few methods that I experimented with, such as self-adaptive mutation rate and/or strength failed to provide any measurable improvement to the algorithm, despite them being quite popular in the literature. Another thing that was quite difficult to work out was how to interpret the results. Due to the random nature of evolutionary algorithms, it was difficult for example to evaluate if a modification to the algorithm or the tuning of a parameter made any difference, which resulted in a lot of trial and error to find a good combination of parameters.
+What surprised me the most in this project was mainly how modular and customizable an evolutionary algorithm can be. There are so many different methods to choose from, yet not all of them are compatible with all problems or with each other and it's a quite complex and time-consuming task to find the right ones to combine. Furthermore, a few methods that I experimented with, such as self-adaptive mutation rate and/or strength failed to provide any measurable improvement to the algorithm, despite them being quite popular in the literature. Another thing that was quite difficult to work out was how to interpret the results. Due to the random nature of evolutionary algorithms, it was difficult for example to evaluate if a modification to the algorithm or the tuning of a parameter made any difference, which resulted in a lot of trial and error to find a good combination of parameters.
 
 %\section{Other comments} \label2{sec_other}
 %
