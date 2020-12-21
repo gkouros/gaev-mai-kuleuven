@@ -11,9 +11,16 @@ import time
 import random
 from copy import deepcopy
 from itertools import permutations, chain
+import warnings
 import numpy as np
+from numba import jit
+from numba.core.errors import NumbaDeprecationWarning, \
+    NumbaPendingDeprecationWarning
 
 import Reporter
+
+warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 
 # Modify the class name to match your student number.
@@ -35,7 +42,7 @@ class r0816917:
         ev = TSPEvolutionaryAlgorithm(
             distance_matrix,
             lambda_=10,
-            mu=5,
+            mu=10,
             k=4,
             recombination_probability=0.9,
             mutation_probability=0.9,
@@ -48,7 +55,7 @@ class r0816917:
 
         while not ev.converged(
                 improvement_criterion=True,
-                improvement_threshold=100):
+                improvement_threshold=200):
 
             # Your code here.
 
@@ -254,6 +261,7 @@ class TSPEvolutionaryAlgorithm:
         #  F = [f[0], f[0]+f[1], 1]
         '''
         F = [0, 1, 1]  # only greedy mutation
+        F = [0.33, 0.66, 1]  # only greedy mutation
 
         prob = np.random.random()
 
@@ -299,12 +307,6 @@ class TSPEvolutionaryAlgorithm:
             Individual(distance_matrix, sigma=self.mutation_strength)
             for _ in range(num_randoms)]
         self.population = random_solutions + heuristic_solutions
-
-        # optimize whole initial population
-        #  for individual in self.population:
-        #      new_route = self.local_search(individual.route,
-        #                                    self.distance_matrix)
-        #      individual.set_route(new_route)
 
         # sort population
         self.population = sorted(self.population, key=lambda k: k.fitness)
@@ -788,37 +790,35 @@ def k_tournament_elimination(offspring: list, population: list, lambda_: int,
 
 ####################### Local Search Operators ################################
 
-def two_opt(route: list, distance_matrix: np.array, timeout: float = 0.2):
+@jit
+def two_opt(route: list, distance_matrix: np.array):
     """ The local search operator 2-opt
 
     Args:
         route (list): The route to optimize
         distance_matrix (np.array): The cost matrix of city distances
-        timeout (int): The maximum allowed time limit for performing 2-opt
 
     Returns:
         list: The optimized route
     """
-    best = deepcopy(route)
+    best = route
+
     improved = True
-    start_time = time.time()
-
-    while improved and time.time() - start_time < timeout:
-
+    count = 0
+    while improved and count < 100:
+        count += 1
         improved = False
         for i in range(1, len(route) - 2):
-            for j in range(i + 1, len(route)):
-                if j - i == 1:
-                    continue
-
+            for j in range(i + 2, len(route)):
                 if cost_change(distance_matrix,
                                best[i - 1], best[i],
-                               best[j - 1], best[j]) <= 0:
+                               best[j - 1], best[j]) < 0:
                     best[i:j] = best[j - 1:i - 1:-1]
                     improved = True
 
     return best
 
+@jit
 def cost_change(distance_matrix: np.array, n1: int, n2: int, n3: int, n4: int):
     """ Calculates the cost of an edge swap
 

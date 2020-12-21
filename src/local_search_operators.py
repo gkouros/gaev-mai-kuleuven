@@ -2,41 +2,62 @@ import time
 import random
 import numpy as np
 import random
+from numba import jit
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+import warnings
 
+warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
-def two_opt(route, distance_matrix, timeout=1):
+@jit
+def two_opt(route: list, distance_matrix: np.array):
+    """ The local search operator 2-opt
+
+    Args:
+        route (list): The route to optimize
+        distance_matrix (np.array): The cost matrix of city distances
+
+    Returns:
+        list: The optimized route
+    """
     best = route
+
     improved = True
-    ts = time.time()
-    size = len(distance_matrix)
-
-    while improved and time.time() - ts < timeout:
-
+    count = 0
+    while improved and count < 100:
+        count += 1
         improved = False
         for i in range(1, len(route) - 2):
-            j_list = list(range(i + 1, len(route)))
-            random.shuffle(j_list)
-            for j in j_list:
-                if j - i == 1:
-                    continue
-
+            for j in range(i + 2, len(route)):
                 if cost_change(distance_matrix,
                                best[i - 1], best[i],
-                               best[j - 1], best[j]) <= 0:
+                               best[j - 1], best[j]) < 0:
                     best[i:j] = best[j - 1:i - 1:-1]
                     improved = True
 
-    #  print(time.time() - ts)
     return best
 
-def cost_change(distance_matrix, n1, n2, n3, n4):
+@jit
+def cost_change(distance_matrix: np.array, n1: int, n2: int, n3: int, n4: int):
+    """ Calculates the cost of an edge swap
+
+    Args:
+        distance_matrix (np.array): The cost matrix of city distances
+        n1 (int): The idx of node1
+        n2 (int): The idx of node2
+        n3 (int): The idx of node3
+        n4 (int): The idx of node4
+
+    Return:
+        Int: The calcluated cost change
+    """
     return distance_matrix[n1][n3] + distance_matrix[n2][n4] - \
-            distance_matrix[n1][n2] - distance_matrix[n3][n4]
+        distance_matrix[n1][n2] - distance_matrix[n3][n4]
 
 def three_opt(tour, distances, timeout=1):
     """Iterative improvement based on 3 exchange."""
-    ts = time.time()
-    while True and time.time() - ts < timeout:
+    #  ts = time.time()
+    while True:# and time.time() - ts < timeout:
         delta = 0
         segments = all_segments(len(tour))
         random.shuffle(segments)
@@ -51,7 +72,6 @@ def three_opt(tour, distances, timeout=1):
 
         if delta >= 0:
             break
-
 
     return tour
 
